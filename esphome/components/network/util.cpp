@@ -17,6 +17,10 @@
 #include "esphome/components/modem/modem_component.h"
 #endif
 
+#ifdef USE_MESH_MESH
+#include "esphome/components/meshmesh/meshmesh.h"
+#endif
+
 namespace esphome {
 namespace network {
 
@@ -29,9 +33,15 @@ bool is_connected() {
     return true;
 #endif
 
+<<<<<<< ours
 #ifdef USE_MODEM
   if (modem::global_modem_component != nullptr)
     return modem::global_modem_component->is_connected();
+=======
+#ifdef USE_MESH_MESH
+  if (meshmesh::MeshmeshComponent::getInstance() != nullptr)
+    return true;
+>>>>>>> theirs
 #endif
 
 #ifdef USE_WIFI
