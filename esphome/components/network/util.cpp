@@ -13,12 +13,21 @@
 #include "esphome/components/openthread/openthread.h"
 #endif
 
+#ifdef USE_MESH_MESH
+#include "esphome/components/meshmesh/meshmesh.h"
+#endif
+
 namespace esphome {
 namespace network {
 
 bool is_connected() {
 #ifdef USE_ETHERNET
   if (ethernet::global_eth_component != nullptr && ethernet::global_eth_component->is_connected())
+    return true;
+#endif
+
+#ifdef USE_MESH_MESH
+  if (meshmesh::MeshmeshComponent::getInstance() != nullptr)
     return true;
 #endif
 
