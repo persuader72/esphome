@@ -21,7 +21,7 @@ void MeshMeshSwitch::setup() {
   mPreferences = global_preferences->make_preference<MeshMeshSwitchState>(get_object_id_hash(), true);
 
   struct MeshMeshSwitchState preferencesdata = {mAddress, mHash, false};
-  if(this->restore_mode_ == GPIO_SWITCH_RESTORE_DEFAULT_ON) preferencesdata.initalState = true;
+  if(this->restore_mode_ == switch_::SWITCH_RESTORE_DEFAULT_ON) preferencesdata.initalState = true;
 
   if(mPreferences.load(&preferencesdata)) {
     mAddress = preferencesdata.address;
@@ -29,14 +29,17 @@ void MeshMeshSwitch::setup() {
   }
 
   switch (this->restore_mode_) {
-    case GPIO_SWITCH_ALWAYS_OFF:
+    case switch_::SWITCH_ALWAYS_OFF:
       preferencesdata.initalState = false;
       break;
-    case GPIO_SWITCH_ALWAYS_ON:
+    case switch_::SWITCH_ALWAYS_ON:
       preferencesdata.initalState = true;
       break;
-    case GPIO_SWITCH_RESTORE_DEFAULT_OFF:
-    case GPIO_SWITCH_RESTORE_DEFAULT_ON:
+    case switch_::SWITCH_RESTORE_DEFAULT_OFF:
+    case switch_::SWITCH_RESTORE_DEFAULT_ON:
+    case switch_::SWITCH_RESTORE_INVERTED_DEFAULT_OFF:
+    case switch_::SWITCH_RESTORE_INVERTED_DEFAULT_ON:
+    case switch_::SWITCH_RESTORE_DISABLED:
       // TODO
       break;
   }
@@ -50,17 +53,26 @@ void MeshMeshSwitch::dump_config() {
   //LOG_PIN("  Pin: ", this->pin_);
   const char *restore_mode = "";
   switch (this->restore_mode_) {
-    case GPIO_SWITCH_RESTORE_DEFAULT_OFF:
+    case switch_::SWITCH_RESTORE_DEFAULT_OFF:
       restore_mode = "Restore (Defaults to OFF)";
       break;
-    case GPIO_SWITCH_RESTORE_DEFAULT_ON:
+    case switch_::SWITCH_RESTORE_DEFAULT_ON:
       restore_mode = "Restore (Defaults to ON)";
       break;
-    case GPIO_SWITCH_ALWAYS_OFF:
+    case switch_::SWITCH_ALWAYS_OFF:
       restore_mode = "Always OFF";
       break;
-    case GPIO_SWITCH_ALWAYS_ON:
+    case switch_::SWITCH_ALWAYS_ON:
       restore_mode = "Always ON";
+      break;
+    case switch_::SWITCH_RESTORE_INVERTED_DEFAULT_OFF:
+      restore_mode = "Restore (Defaults to OFF, Inverted)";
+      break;
+    case switch_::SWITCH_RESTORE_INVERTED_DEFAULT_ON:
+      restore_mode = "Restore (Defaults to ON, Inverted)";
+      break;
+    case switch_::SWITCH_RESTORE_DISABLED:
+      restore_mode = "Restore (Disabled)";
       break;
   }
   ESP_LOGCONFIG(TAG, "  Restore Mode: %s", restore_mode);
@@ -79,7 +91,7 @@ void MeshMeshSwitch::write_state(bool state) {
   this->publish_state(state);
 }
 
-void MeshMeshSwitch::set_restore_mode(GPIOSwitchRestoreMode restore_mode) { this->restore_mode_ = restore_mode; }
+void MeshMeshSwitch::set_restore_mode(switch_::SwitchRestoreMode restore_mode) { this->restore_mode_ = restore_mode; }
 
 }  // namespace gpio
 }  // namespace esphome
