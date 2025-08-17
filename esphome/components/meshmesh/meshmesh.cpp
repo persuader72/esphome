@@ -374,6 +374,11 @@ void MeshmeshComponent::dump_config() {
     ESP_LOGCONFIG(TAG, "Found sensor %s with hash %08X", sensor->get_object_id().c_str(), sensor->get_object_id_hash());
   }
 #endif
+#ifdef USE_SWITCH
+  for (auto switch_ : App.get_switches()) {
+    ESP_LOGCONFIG(TAG, "Found switch %s with hash %08X", switch_->get_object_id().c_str(), switch_->get_object_id_hash());
+  }
+#endif
 }
 
 void MeshmeshComponent::loop() {
@@ -938,7 +943,7 @@ void MeshmeshComponent::handleFrame(const uint8_t *data, uint16_t len, DataSrc s
           case SensorEntity:
 #ifdef USE_SENSOR
             if (index < App.get_sensors().size()) {
-              auto sensor = App.get_sensors().at(index);
+              auto sensor = App.get_sensors()[index];
               hash = sensor->get_object_id_hash() & 0xFFFF;
               info = sensor->get_name() + "," + sensor->get_object_id() + "," + sensor->get_unit_of_measurement();
               hashfound = true;
@@ -948,7 +953,7 @@ void MeshmeshComponent::handleFrame(const uint8_t *data, uint16_t len, DataSrc s
           case BinarySensorEntity:
 #ifdef USE_BINARY_SENSOR
             if (index < App.get_binary_sensors().size()) {
-              auto binary = App.get_binary_sensors().at(index);
+              auto binary = App.get_binary_sensors()[index];
               hash = binary->get_object_id_hash() & 0xFFFF;
               info = binary->get_name() + "," + binary->get_object_id();
               hashfound = true;
@@ -958,7 +963,7 @@ void MeshmeshComponent::handleFrame(const uint8_t *data, uint16_t len, DataSrc s
           case SwitchEntity:
 #ifdef USE_SWITCH
             if (index < App.get_switches().size()) {
-              auto switch_ = App.get_switches().at(index);
+              auto switch_ = App.get_switches()[index];
               hash = switch_->get_object_id_hash() & 0xFFFF;
               info = switch_->get_name() + "," + switch_->get_object_id();
               hashfound = true;
@@ -968,7 +973,7 @@ void MeshmeshComponent::handleFrame(const uint8_t *data, uint16_t len, DataSrc s
           case LightEntity:
 #ifdef USE_LIGHT
             if (index < App.get_lights().size()) {
-              auto light = App.get_lights().at(index);
+              auto light = App.get_lights()[index];
               hash = light->get_object_id_hash() & 0xFFFF;
               info = light->get_name() + "," + light->get_object_id();
               hashfound = true;
@@ -978,7 +983,7 @@ void MeshmeshComponent::handleFrame(const uint8_t *data, uint16_t len, DataSrc s
           case TextSensorEntity:
 #ifdef USE_TEXT_SENSOR
             if (index < App.get_text_sensors().size()) {
-              auto texts = App.get_text_sensors().at(index);
+              auto texts = App.get_text_sensors()[index];
               hash = texts->get_object_id_hash() & 0xFFFF;
               info = texts->get_name() + "," + texts->get_object_id();
               hashfound = true;
