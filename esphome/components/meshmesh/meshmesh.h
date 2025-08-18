@@ -121,7 +121,8 @@ class MeshmeshComponent : public Component {
   }
 #ifdef USE_ESP32
   static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
-  void setupIdfWifi();
+  bool setupIdfWifiAP();
+  bool setupIdfWifiStation();
 #endif
   void setupWifi();
   void setup() override;
@@ -234,7 +235,11 @@ class MeshmeshComponent : public Component {
 #endif  // USE_ESP8266 || USE_ESP32
 #endif  // USE_ARDUINO
 
+#ifdef USE_ESP_IDF
+  uart_port_t mUartNum{UART_NUM_0};
+#else
   int mUartNum{0};
+#endif
   RecvState mRecvState = WAIT_MAGICK;
   uint8_t *mRecvBuffer = nullptr;
   uint16_t mRecvBufferPos = 0;

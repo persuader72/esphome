@@ -111,11 +111,10 @@ void MeshmeshComponent::wifi_event_handler(void *arg, esp_event_base_t event_bas
 #endif
 
 #ifdef USE_ESP32
-void setupIdfWifi() {
+bool MeshmeshComponent::setupIdfWifiAP() {
   esp_err_t res;
 #ifdef USE_ESP32_FRAMEWORK_ESP_IDF
   wifi_config_t wcfg;
-
   strcpy((char *) wcfg.ap.ssid, "esphome");
   strcpy((char *) wcfg.ap.password, "esphome");
   wcfg.ap.ssid_len = 0;
@@ -147,49 +146,49 @@ void setupIdfWifi() {
   res = esp_netif_init();
   if (res != ESP_OK) {
     ESP_LOGD(TAG, "esp_netif_init error %d", res);
-    goto wifi_error;
+    return false;
   }
 
   res = esp_event_loop_create_default();
   if (res != ESP_OK) {
     ESP_LOGD(TAG, "esp_event_loop_create_default error %d", res);
-    goto wifi_error;
+    return false;
   }
 
   netif = esp_netif_create_default_wifi_ap();
   if (!netif) {
     ESP_LOGE(TAG, "%s wifi ap creation failed: %s", __func__, esp_err_to_name(res));
-    goto wifi_error;
+    return false;
   }
 
   res = esp_wifi_init(&cfg);
   if (res != ESP_OK) {
     ESP_LOGD(TAG, "esp_wifi_init error %d", res);
-    goto wifi_error;
+    return false;
   }
 
   res = esp_wifi_set_storage(WIFI_STORAGE_RAM);
   if (res != ESP_OK) {
     ESP_LOGD(TAG, "esp_wifi_set_storage error %s", esp_err_to_name(res));
-    goto wifi_error;
+    return false;
   }
 
   res = esp_event_handler_register(ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, &wifi_event_handler, nullptr);
   if (res != ESP_OK) {
     ESP_LOGD(TAG, "esp_event_handler_instance_register error %d", res);
-    goto wifi_error;
+    return false;
   }
 
   res = esp_wifi_set_storage(WIFI_STORAGE_RAM);
   if (res != ESP_OK) {
     ESP_LOGD(TAG, "esp_wifi_set_storage error %d", res);
-    goto wifi_error;
+    return false;
   }
 
   res = esp_wifi_set_mode(WIFI_MODE_AP);
   if (res != ESP_OK) {
     ESP_LOGD(TAG, "esp_wifi_set_mode error %d", res);
-    goto wifi_error;
+    return false;
   }
 
   wifiInitMacAddr(ESP_IF_WIFI_AP);
@@ -197,61 +196,169 @@ void setupIdfWifi() {
   res = esp_wifi_set_config(WIFI_IF_AP, &wcfg);
   if (res != ESP_OK) {
     ESP_LOGD(TAG, "esp_wifi_set_config error %d", res);
-    goto wifi_error;
+    return false;
   }
 
   ESP_LOGI(TAG, "Selected channel %d", wcfg.ap.channel);
+
+  ESP_LOGD(TAG, "esp_wifi_set_protocol");
+  res = esp_wifi_set_protocol(WIFI_IF_AP, WIFI_PROTOCOL_11B);
+  if (res != ESP_OK) {
+    ESP_LOGD(TAG, "esp_wifi_set_protocol error %d", res);
+    return false;
+  }
 
   ESP_LOGD(TAG, "Start!!!");
   res = esp_wifi_start();
   if (res != ESP_OK) {
     ESP_LOGD(TAG, "esp_wifi_start error %d", res);
-    goto wifi_error;
+    return false;
   }
 
+  ESP_LOGD(TAG, "esp_wifi_set_promiscuous");
   res = esp_wifi_set_promiscuous(true);
   if (res != ESP_OK) {
     ESP_LOGD(TAG, "esp_wifi_set_promiscuous error %d", res);
-    goto wifi_error;
+    return false;
   }
+  ESP_LOGD(TAG, "esp_wifi_set_promiscuous_filter");
   res = esp_wifi_set_promiscuous_filter(&filt);
   if (res != ESP_OK) {
     ESP_LOGD(TAG, "esp_wifi_set_promiscuous_filter error %d", res);
-    goto wifi_error;
+    return false;
   }
 
-  /*res = esp_wifi_set_channel(mConfigChannel > 13 ? mPreferences.channel : mConfigChannel, WIFI_SECOND_CHAN_NONE);
-  if(res != ESP_OK) {
-    ESP_LOGD(TAG, "esp_wifi_set_channel error %d", res);
-    goto wifi_error;
-  }*/
-
+  ESP_LOGD(TAG, "esp_wifi_set_max_tx_power");
   res = esp_wifi_set_max_tx_power(84);
   if (res != ESP_OK) {
     ESP_LOGD(TAG, "esp_wifi_set_max_tx_power error %d", res);
-    goto wifi_error;
+    return false;
   }
 
-  res = esp_wifi_set_protocol(WIFI_IF_AP, WIFI_PROTOCOL_11B);
-  if (res != ESP_OK) {
-    ESP_LOGD(TAG, "esp_wifi_set_protocol error %d", res);
-    goto wifi_error;
-  }
-
+  ESP_LOGD(TAG, "esp_wifi_set_ps");
   res = esp_wifi_set_ps(WIFI_PS_NONE);
   if (res != ESP_OK) {
     ESP_LOGD(TAG, "esp_wifi_set_ps error %d", res);
-    goto wifi_error;
+    return false;
   }
 
-wifi_error:
+  return true;
+}
+
+bool MeshmeshComponent::setupIdfWifiStation() {
+  esp_err_t res;
+
+
+  esp_netif_t *netif;
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  const wifi_promiscuous_filter_t filt = {.filter_mask = WIFI_PROMIS_FILTER_MASK_MGMT | WIFI_PROMIS_FILTER_MASK_DATA};
+  res = esp_netif_init();
+  if (res != ESP_OK) {
+    ESP_LOGD(TAG, "esp_netif_init error %d", res);
+    return false;
+  }
+
+  res = esp_event_loop_create_default();
+  if (res != ESP_OK) {
+    ESP_LOGD(TAG, "esp_event_loop_create_default error %d", res);
+    return false;
+  }
+
+  netif = esp_netif_create_default_wifi_sta();
+  if (!netif) {
+    ESP_LOGE(TAG, "%s wifi ap creation failed: %s", __func__, esp_err_to_name(res));
+    return false;
+  }
+
+  res = esp_wifi_init(&cfg);
+  if (res != ESP_OK) {
+    ESP_LOGD(TAG, "esp_wifi_init error %d", res);
+    return false;
+  }
+
+  res = esp_wifi_set_storage(WIFI_STORAGE_RAM);
+  if (res != ESP_OK) {
+    ESP_LOGD(TAG, "esp_wifi_set_storage error %s", esp_err_to_name(res));
+    return false;
+  }
+
+  res = esp_event_handler_register(ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, &wifi_event_handler, nullptr);
+  if (res != ESP_OK) {
+    ESP_LOGD(TAG, "esp_event_handler_instance_register error %d", res);
+    return false;
+  }
+
+  res = esp_wifi_set_storage(WIFI_STORAGE_RAM);
+  if (res != ESP_OK) {
+    ESP_LOGD(TAG, "esp_wifi_set_storage error %d", res);
+    return false;
+  }
+
+  res = esp_wifi_set_mode(WIFI_MODE_STA);
+  if (res != ESP_OK) {
+    ESP_LOGD(TAG, "esp_wifi_set_mode error %d", res);
+    return false;
+  }
+
+  wifiInitMacAddr(WIFI_IF_STA);
+
+  ESP_LOGD(TAG, "esp_wifi_set_protocol");
+  res = esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B);
+  if (res != ESP_OK) {
+    ESP_LOGD(TAG, "esp_wifi_set_protocol error %d", res);
+    return false;
+  }
+
+  ESP_LOGD(TAG, "Start!!!");
+  res = esp_wifi_start();
+  if (res != ESP_OK) {
+    ESP_LOGD(TAG, "esp_wifi_start error %d", res);
+    return false;
+  }
+
+  ESP_LOGD(TAG, "esp_wifi_set_promiscuous");
+  res = esp_wifi_set_promiscuous(true);
+  if (res != ESP_OK) {
+    ESP_LOGD(TAG, "esp_wifi_set_promiscuous error %d", res);
+    return false;
+  }
+
+  ESP_LOGD(TAG, "esp_wifi_set_promiscuous_filter");
+  res = esp_wifi_set_promiscuous_filter(&filt);
+  if (res != ESP_OK) {
+    ESP_LOGD(TAG, "esp_wifi_set_promiscuous_filter error %d", res);
+    return false;
+  }
+
+  ESP_LOGI(TAG, "Selected channel %d", mConfigChannel > MAX_CHANNEL ? DEF_CHANNEL : mConfigChannel);
+  res = esp_wifi_set_channel(mConfigChannel > MAX_CHANNEL ? DEF_CHANNEL : mConfigChannel, WIFI_SECOND_CHAN_NONE);
+  if(res != ESP_OK) {
+    ESP_LOGD(TAG, "esp_wifi_set_channel error %d", res);
+    return false;
+  }
+
+  ESP_LOGD(TAG, "esp_wifi_set_max_tx_power");
+  res = esp_wifi_set_max_tx_power(84);
+  if (res != ESP_OK) {
+    ESP_LOGD(TAG, "esp_wifi_set_max_tx_power error %d", res);
+    return false;
+  }
+
+  ESP_LOGD(TAG, "esp_wifi_set_ps");
+  res = esp_wifi_set_ps(WIFI_PS_NONE);
+  if (res != ESP_OK) {
+    ESP_LOGD(TAG, "esp_wifi_set_ps error %d", res);
+    return false;
+  }
+
+  return true;
 }
 #endif
 
 void MeshmeshComponent::setupWifi() {
   ESP_LOGCONFIG(TAG, "Setting up meshmesh wifi...");
 #ifdef USE_ESP32
-  setupIdfWifi();
+  setupIdfWifiStation();
 #else
   wifi_station_set_hostname((char *) App.get_name().c_str());
   wifi_set_opmode(STATION_MODE);
@@ -474,7 +581,7 @@ void MeshmeshComponent::loop() {
 
   if (elapsedMillis(now, mElapsed1) > 60000) {
 #ifdef USE_ESP32_FRAMEWORK_ESP_IDF
-    ESP_LOGI(TAG, "Free Heap %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    ESP_LOGI(TAG, "Fre  e Heap %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 #else
     ESP_LOGI(TAG, "Free Heap %d", ESP.getFreeHeap());
 #endif
@@ -647,7 +754,7 @@ void MeshmeshComponent::initIdfUart() {
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
   uart_config.source_clk = UART_SCLK_DEFAULT;
 #endif
-  int uartNum = 0;
+  uart_port_t uartNum = UART_NUM_0;
   uart_param_config(uartNum, &uart_config);  // FIXME
   uart_driver_install(uartNum, mTxBuffer, mTxBuffer, 10, nullptr, 0);
 }
