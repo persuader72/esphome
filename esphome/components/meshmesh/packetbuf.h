@@ -232,7 +232,7 @@ class PacketBuf {
 #endif
  private:
   void freedomCallback(uint8_t status);
-#if USE_ESP32
+#ifdef USE_ESP32
   void recvTask(uint32_t index);
   static void wifiTxDoneCb(uint8_t ifidx, uint8_t *data, uint16_t *data_len, bool txStatus);
 #else

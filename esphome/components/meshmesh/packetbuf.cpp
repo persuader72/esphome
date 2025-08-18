@@ -140,25 +140,6 @@ void RadioPacket::callCallback(uint8_t status, RadioPacket *data) {
 void RadioPacket::sendFreedom() {
     if(mEncryptedData == nullptr) return;
 
-#if ARDUINO_ARCH_ESP8266
-    wifi_send_pkt_freedom(ptr80211(), len80211(), true);
-#endif
-
-#if USE_ESP32
-    ESP_LOGD(TAG, "sendFreedom esp_wifi_80211_tx about to send %d", len80211());
-
-    esp_err_t res;
-	/*res = esp_wifi_set_channel(3, WIFI_SECOND_CHAN_NONE);
-	if(res != ESP_OK) {
-		ESP_LOGD(TAG, "esp_wifi_set_channel error %d", res);
-	}*/
-
-    res = esp_wifi_80211_tx(WIFI_IF_AP, ptr80211(), len80211(), true);
-    if(res != ESP_OK) {
-        ESP_LOGE(TAG, "sendFreedom esp_wifi_80211_tx err %d", res);
-}
-#endif
-
 #if 0
     auto ieee80211_hdr = (ieee80211_hdr_p)ptr80211();
     ESP_LOGD(TAG, "sendFreedom type %d,%d", ieee80211_hdr->frame_control.Type, ieee80211_hdr->frame_control.Subtype);
@@ -168,6 +149,18 @@ void RadioPacket::sendFreedom() {
         ieee80211_hdr->addr2[3], ieee80211_hdr->addr2[4], ieee80211_hdr->addr2[5]);
     ESP_LOGD(TAG, "mac3 %02X:%02X:%02X:%02X:%02X:%02X", ieee80211_hdr->addr3[0], ieee80211_hdr->addr3[1], ieee80211_hdr->addr3[2], \
         ieee80211_hdr->addr3[3], ieee80211_hdr->addr3[4], ieee80211_hdr->addr3[5]);
+#endif
+
+#ifdef ARDUINO_ARCH_ESP8266
+    wifi_send_pkt_freedom(ptr80211(), len80211(), true);
+#endif
+
+#ifdef USE_ESP32
+    //ESP_LOGD(TAG, "sendFreedom esp_wifi_80211_tx about to send %d bytes", len80211());
+    esp_err_t res = esp_wifi_80211_tx(WIFI_IF_STA, ptr80211(), len80211(), true);
+    if(res != ESP_OK) {
+        ESP_LOGE(TAG, "sendFreedom esp_wifi_80211_tx err %d", res);
+    }
 #endif
 }
 
@@ -181,12 +174,12 @@ void RadioPacket::fill80211(uint8_t *targetId, uint8_t *pktbufNodeIdPtr) {
 	ieee80211_hdr->frame_control.Subtype = FRAME_SUBTYPE_DATA;
 
 #ifdef USE_ESP32
-    ieee80211_hdr->frame_control.FromDS = targetId ? 0 : 1;
-    ieee80211_hdr->frame_control.ToDS = 0;
+  ieee80211_hdr->frame_control.FromDS = targetId ? 0 : 1;
+  ieee80211_hdr->frame_control.ToDS = 0;
 #endif
 
-    ieee80211_hdr->seq_ctrl = ++seq_ctrl;
-	// Broadcast destinations
+  ieee80211_hdr->seq_ctrl = ++seq_ctrl;
+	// Fill addresses with 0xFF
 	os_memset(ieee80211_hdr->addr1, 0xFF, 18);
 	// Target for unicast packet
 	if(targetId) {
@@ -197,12 +190,21 @@ void RadioPacket::fill80211(uint8_t *targetId, uint8_t *pktbufNodeIdPtr) {
 		ieee80211_hdr->addr1[4] = targetId[1];
 		ieee80211_hdr->addr1[5] = targetId[0];
 	} else {
-        ieee80211_hdr->addr1[0] = 0xFF;
-        ieee80211_hdr->addr1[1] = 0xFF;
-        ieee80211_hdr->addr1[2] = 0xFF;
-        ieee80211_hdr->addr1[3] = 0xFF;
-        ieee80211_hdr->addr1[4] = 0xFF;
-        ieee80211_hdr->addr1[5] = 0xFF;
+  #ifdef USE_BROADCAST_WITH_MULTICAST
+    ieee80211_hdr->addr1[0] = 0x01;
+    ieee80211_hdr->addr1[1] = 0x00;
+    ieee80211_hdr->addr1[2] = 0x5E;
+    ieee80211_hdr->addr1[3] = 0x7F;
+    ieee80211_hdr->addr1[4] = 0x00;
+    ieee80211_hdr->addr1[5] = 0x01;
+  #else
+    ieee80211_hdr->addr1[0] = 0xFF;
+    ieee80211_hdr->addr1[1] = 0xFF;
+    ieee80211_hdr->addr1[2] = 0xFF;
+    ieee80211_hdr->addr1[3] = 0xFF;
+    ieee80211_hdr->addr1[4] = 0xFF;
+    ieee80211_hdr->addr1[5] = 0xFF;
+  #endif
     }
 
 	// Source of target
@@ -240,10 +242,12 @@ uint8_t PacketBuf::send(RadioPacket *pkt) {
     if(!pktbufSent) {
         pktbufSent = pkt;
         pktbufSent->sendFreedom();
+        /* Not true anymore... code pending for deletion
         // Bradcast packets don't call the callback
         if(pktbufSent->isBroadcast()) {
             freedomCallback(1);
         }
+        */
     } else {
         // FIXME: Limit maximum queue size
         mPacketQueue.push_back(pkt);
@@ -360,7 +364,7 @@ void PacketBuf::recvTask(os_event_t *events) {
     }
 }
 
-#if USE_ESP32
+#ifdef USE_ESP32
 void PacketBuf::wifiTxDoneCb(uint8_t ifidx, uint8_t *data, uint16_t *data_len, bool txStatus) {
     //ESP_LOGD(TAG, "wifiTxDoneCb if:%d sent:%d len:%d", ifidx, txStatus, *data_len);
     if(singleton) singleton->freedomCallback(txStatus?0:1);
