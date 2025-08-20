@@ -273,11 +273,6 @@ class MeshmeshComponent : public Component {
   bool mWorkAround{false};
 #endif
 
-#ifdef USE_BINARY_SENSOR
-  binary_sensor::BinarySensor *mFactoryReset = nullptr;
-  uint32_t mFactoryResetRequested = 0;
-#endif
-
   uint32_t mLastAssocRequestTime = 0;
 
 #ifdef USE_TEST_PROCEDURE
