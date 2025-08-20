@@ -435,26 +435,6 @@ void MeshmeshComponent::setup() {
   for (auto binary : App.get_binary_sensors()) {
     ESP_LOGCONFIG(TAG, "Found binary sensor %s with hash %08X", binary->get_object_id().c_str(),
                   binary->get_object_id_hash());
-
-    mFactoryReset = binary;
-    mFactoryReset->add_on_state_callback([this](bool state) {
-      uint32_t now = millis();
-      if (!state) {
-        if (mFactoryResetRequested == 0) {
-          // Button pressed  and reset procedure is not active
-          ESP_LOGI(TAG, "Factory reset requested");
-          status_set_warning();
-          mFactoryResetRequested = now;
-        }
-      } else {
-        if (mFactoryResetRequested > 0 && elapsedMillis(now, mFactoryResetRequested) < 5000) {
-          // Button released and reset procedure is active for less than 5 seconds
-          status_clear_warning();
-          mFactoryResetRequested = 0;
-          ESP_LOGI(TAG, "Factory reset cancelled");
-        }
-      }
-    });
   }
 #endif
 
@@ -490,19 +470,6 @@ void MeshmeshComponent::dump_config() {
 
 void MeshmeshComponent::loop() {
   uint32_t now = millis();
-#ifdef USE_BINARY_SENSOR
-  if (mFactoryResetRequested > 0) {
-    if (elapsedMillis(now, mFactoryResetRequested) > 20000) {
-      ESP_LOGI(TAG, "Factory reset in progress");
-      App.reboot();
-    } else if (elapsedMillis(now, mFactoryResetRequested) > 5000) {
-      status_set_error();
-      ESP_LOGI(TAG, "Factory reset in accpeted");
-      defaultPreferences();
-      mPreferencesObject.save(&mPreferences);
-    }
-  }
-#endif
 
   if (mBaudRate > 0) {
 #ifdef USE_ARDUINO
