@@ -683,6 +683,15 @@ switch_::Switch *MeshmeshComponent::findSwitch(uint16_t hash) {
   }
   return result;
 }
+
+void MeshmeshComponent::publishRemoteSwitchState(uint32_t addr, uint16_t hash, bool state) {
+  uint8_t buff[6];
+  buff[0] = CMD_PUB_ENTITY_STATE_REQ;
+  buff[1] = MeshmeshComponent::SwitchEntity;
+  uint16toBuffer(buff+2, hash);
+  uint16toBuffer(buff+4, state ? 10 : 0);
+  uniCastSendData(buff, 6, addr);
+}
 #endif
 
 MeshmeshComponent::EnityType MeshmeshComponent::findEntityTypeByHash(uint16_t hash) {
