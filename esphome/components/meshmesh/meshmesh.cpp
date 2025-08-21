@@ -1160,7 +1160,6 @@ void MeshmeshComponent::handleFrame(const uint8_t *data, uint16_t len, DataSrc s
         }
       }
       break;
-
     case CMD_SET_ENTITY_STATE_REQ:
       if (len == 6) {
         EnityType type = (EnityType) buf[1];
@@ -1209,6 +1208,43 @@ void MeshmeshComponent::handleFrame(const uint8_t *data, uint16_t len, DataSrc s
           commandReply(rep, 1);
           err = 0;
         }
+      }
+      break;
+
+    case CMD_PUB_ENTITY_STATE_REQ:
+      if (len == 6) {
+        EnityType type = (EnityType) buf[1];
+        uint16_t hash = uint16FromBuffer(buf + 2);
+        uint16_t value = uint16FromBuffer(buf + 4);
+        ESP_LOGD(TAG, "CMD_PUB_ENTITY_STATE_REQ type %d hash %04X value %d", type, hash, value);
+
+        switch (type) {
+          case LightEntity: {
+#ifdef USE_LIGHT
+            // TODO: Implement light publish
+#endif
+          } break;
+          case SwitchEntity: {
+#ifdef USE_SWITCH
+            auto *state = findSwitch(hash);
+            if (state != nullptr) {
+              state->publish_state(value > 0 ? true : false);
+            }
+#endif
+          } break;
+          case SensorEntity:
+          case BinarySensorEntity:
+          case TextSensorEntity:
+            break;
+          case AllEntities:
+          case LastEntity:
+            break;
+        }
+
+        uint8_t rep[1];
+        rep[0] = CMD_PUB_ENTITY_STATE_REP;
+        commandReply(rep, 1);
+        err = 0;
       }
       break;
 
