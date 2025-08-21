@@ -147,10 +147,15 @@ class MeshmeshComponent : public Component {
 #ifdef USE_CONNECTED_PROTOCOL
   void connectedpathSendData(const uint8_t *buff, uint16_t len, uint32_t addr, uint8_t pathlen, uint8_t *path);
 #endif
- public:
+public:
   static unsigned long elapsedMillis(unsigned long t2, unsigned long t1) {
     return t2 >= t1 ? t2 - t1 : (~(t1 - t2)) + 1;
   }
+
+ public:
+#ifdef USE_SWITCH
+  void publishRemoteSwitchState(uint32_t addr, uint16_t hash, bool state);
+#endif
 
  private:
 #ifdef USE_SENSOR
