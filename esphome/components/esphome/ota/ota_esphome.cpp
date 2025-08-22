@@ -8,6 +8,9 @@
 #include "esphome/components/ota/ota_backend_arduino_libretiny.h"
 #include "esphome/components/ota/ota_backend_arduino_rp2040.h"
 #include "esphome/components/ota/ota_backend_esp_idf.h"
+#ifdef USE_MESH_MESH
+#include "esphome/components/meshmesh/meshmesh.h"
+#endif
 #include "esphome/core/application.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
@@ -473,7 +476,7 @@ bool ESPHomeOTAComponent::writeall_(const uint8_t *buf, size_t len) {
   return true;
 }
 
-float ESPHomeOTAComponent::get_setup_priority() const { return setup_priority::AFTER_WIFI; }
+float ESPHomeOTAComponent::get_setup_priority() const { return setup_priority::LATE; }
 uint16_t ESPHomeOTAComponent::get_port() const { return this->port_; }
 void ESPHomeOTAComponent::set_port(uint16_t port) { this->port_ = port; }
 
@@ -495,6 +498,9 @@ void ESPHomeOTAComponent::cleanup_connection_() {
 }
 
 void ESPHomeOTAComponent::yield_and_feed_watchdog_() {
+#ifdef USE_MESH_MESH
+  meshmesh::MeshmeshComponent::getInstance()->loop();
+#endif
   App.feed_wdt();
   delay(1);
 }
