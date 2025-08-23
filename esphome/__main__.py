@@ -423,14 +423,17 @@ def upload_program(
         return exit_code, host if exit_code == 0 else None
 
     ota_conf = {}
+
+    if CONF_ESPHOME not in args.ota_platform:
+        args.ota_platform.append(CONF_ESPHOME)
     for ota_item in config.get(CONF_OTA, []):
-        if ota_item[CONF_PLATFORM] == CONF_ESPHOME:
+        if ota_item[CONF_PLATFORM] in args.ota_platform:
             ota_conf = ota_item
-            break
+        break
 
     if not ota_conf:
         raise EsphomeError(
-            f"Cannot upload Over the Air as the {CONF_OTA} configuration is not present or does not include {CONF_PLATFORM}: {CONF_ESPHOME}"
+            f"Cannot upload Over the Air as the {CONF_OTA} configuration is not present or does not include {CONF_PLATFORM}: {args.ota_platform}"
         )
 
     from esphome import espota2
@@ -1013,6 +1016,13 @@ def parse_args(argv):
         action="store_true",
         help="Reset the device before starting serial logs.",
         default=os.getenv("ESPHOME_SERIAL_LOGGING_RESET"),
+    )
+
+    parser_run.add_argument(
+        "--ota-platform",
+        action="append",
+        help="Manually specify the platform to use for OTA updates.",
+        default=["esphome"],
     )
 
     parser_clean = subparsers.add_parser(
