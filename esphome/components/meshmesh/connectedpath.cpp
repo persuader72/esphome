@@ -381,9 +381,16 @@ void ConnectedPath::openConnection(uint32_t from, uint16_t handle, uint16_t data
         // Ack open connection request
         sendPacket(CONNPATH_OPEN_CONNECTION_ACK, connid, REVERSE, 0, nullptr);
         // Call the handler to receive data for this port
+        bool portFound = false;
         for (ConnectedPathBindedPort_t bp : mBindedPorts) {
-          if (bp.port == port)
+          if (bp.port == port) {
             bp.handler(bp.arg, conn->sourceAddr, conn->sourceHandle);
+            portFound = true;
+          }
+        }
+        if (!portFound) {
+          ESP_LOGE(TAG, "ConnectedPath::openConnection port %d not found", port);
+          sendPacket(CONNPATH_OPEN_CONNECTION_NACK, connid, REVERSE, 0, nullptr);
         }
       }
     } else {
