@@ -134,6 +134,7 @@ class MeshmeshComponent : public Component {
   void loop() override;
 
  public:
+  void setLockdownMode(bool active) { packetbuf->setLockdownMode(active); }
   static void wifiInitMacAddr(uint8_t index);
   void commandReply(const uint8_t *buff, uint16_t len);
   void uartSendData(const uint8_t *buff, uint16_t len);

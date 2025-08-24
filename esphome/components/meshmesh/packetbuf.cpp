@@ -414,6 +414,10 @@ void PacketBuf::loop() {
 #endif
 
 void IRAM_ATTR HOT PacketBuf::rawRecv(RxPacket *pkt) {
+  if(isLockdownModeActive) {
+    return;
+  }
+
 	ieee80211_hdr_p ieee80211_hdr = (ieee80211_hdr_p)pkt->payload;
 
 #if 0

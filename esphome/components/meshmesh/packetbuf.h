@@ -240,6 +240,12 @@ class PacketBuf {
   static void recvTask_cb(os_event_t *events);
   void recvTask(os_event_t *events);
 #endif
+
+ public:
+  void setLockdownMode(bool active) { isLockdownModeActive = active; }
+ private:
+  bool isLockdownModeActive = false;
+
  private:
   RadioPacket *pktbufSent = nullptr;
   std::list<RadioPacket *> mPacketQueue;
