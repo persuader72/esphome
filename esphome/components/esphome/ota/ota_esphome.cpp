@@ -8,6 +8,9 @@
 #include "esphome/components/ota/ota_backend_arduino_libretiny.h"
 #include "esphome/components/ota/ota_backend_arduino_rp2040.h"
 #include "esphome/components/ota/ota_backend_esp_idf.h"
+#ifdef USE_MESH_MESH
+#include "esphome/components/meshmesh/meshmesh.h"
+#endif
 #include "esphome/core/application.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
@@ -347,8 +350,23 @@ void ESPHomeOTAComponent::handle_data_() {
       ESP_LOGW(TAG, "Remote closed connection");
       goto error;  // NOLINT(cppcoreguidelines-avoid-goto)
     }
-
+/*
+    On esp8266 platforms the program is executed in flash, this means that is not possible to execute any function
+    during a flash write or erase operation. Then if a packet is received during a flash write or a flash erase, the
+    cpu will crash.
+    To avoid this, we set the lockdown mode during the write/erase operations to be sure that no packet is handled.
+*/
+#ifdef USE_MESH_MESH
+#ifdef USE_ESP8266
+    meshmesh::MeshmeshComponent::getInstance()->setLockdownMode(true);
+#endif
+#endif
     error_code = backend->write(buf, read);
+#ifdef USE_MESH_MESH
+#ifdef USE_ESP8266
+    meshmesh::MeshmeshComponent::getInstance()->setLockdownMode(false);
+#endif
+#endif
     if (error_code != ota::OTA_RESPONSE_OK) {
       ESP_LOGW(TAG, "Flash write error, code: %d", error_code);
       goto error;  // NOLINT(cppcoreguidelines-avoid-goto)
@@ -471,7 +489,7 @@ bool ESPHomeOTAComponent::writeall_(const uint8_t *buf, size_t len) {
   return true;
 }
 
-float ESPHomeOTAComponent::get_setup_priority() const { return setup_priority::AFTER_WIFI; }
+float ESPHomeOTAComponent::get_setup_priority() const { return setup_priority::LATE; }
 uint16_t ESPHomeOTAComponent::get_port() const { return this->port_; }
 void ESPHomeOTAComponent::set_port(uint16_t port) { this->port_ = port; }
 
@@ -490,6 +508,9 @@ void ESPHomeOTAComponent::cleanup_connection_() {
 }
 
 void ESPHomeOTAComponent::yield_and_feed_watchdog_() {
+#ifdef USE_MESH_MESH
+  meshmesh::MeshmeshComponent::getInstance()->loop();
+#endif
   App.feed_wdt();
   delay(1);
 }
