@@ -353,13 +353,27 @@ void MeshmeshOTAComponent::handle_data_() {
       ESP_LOGW(TAG, "Remote closed connection");
       goto error;  // NOLINT(cppcoreguidelines-avoid-goto)
     }
-
+/*
+    On esp8266 platforms the program is executed in flash, this means that is not possible to execute any function
+    during a flash write or erase operation. Then if a packet is received during a flash write or a flash erase, the
+    cpu will crash.
+    To avoid this, we set the lockdown mode during the write/erase operations to be sure that no packet is handled.
+*/
+#ifdef USE_ESP8266
+    meshmesh::MeshmeshComponent::getInstance()->setLockdownMode(true);
+#endif
     error_code = backend->write(buf, read);
+#ifdef USE_ESP8266
+    meshmesh::MeshmeshComponent::getInstance()->setLockdownMode(false);
+#endif
     if (error_code != ota::OTA_RESPONSE_OK) {
       ESP_LOGW(TAG, "Flash write error, code: %d", error_code);
       goto error;  // NOLINT(cppcoreguidelines-avoid-goto)
     }
     total += read;
+    // FIXME: This delay is needed to ensure the data is written to the flash on esp8266 platforms.
+    // It should be removed once the issue is fixed.
+    delay(10);
 #if USE_OTA_VERSION == 2
     while (size_acknowledged + OTA_BLOCK_SIZE <= total || (total == ota_size && size_acknowledged < ota_size)) {
       buf[0] = ota::OTA_RESPONSE_CHUNK_OK;
