@@ -4,7 +4,7 @@ This is an implementation of a mesh component  network for ESPHome framework tha
 
 Refer to this project for further details and tutorials: [https://github.com/EspMeshMesh/meshmeshgo](https://github.com/EspMeshMesh/meshmeshgo).
 
-Impacted components are: **network**, **ota**, [meshmesh](https://github.com/persuader72/esphome/tree/mm_dev/esphome/components/meshmesh) and **socket**.
+Impacted components are: **network**, **ota**, [meshmesh](https://github.com/persuader72/esphome/tree/mm_dev/esphome/components/meshmesh), [meshmesh_direct](https://github.com/persuader72/esphome/tree/mm_dev/esphome/components/meshmesh_direct) and **socket**.
 
 <a href="https://esphome.io/">
 

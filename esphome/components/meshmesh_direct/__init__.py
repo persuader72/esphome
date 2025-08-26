@@ -1,7 +1,8 @@
 from esphome import automation, core
 import esphome.codegen as cg
+from esphome.components.udp import CONF_ON_RECEIVE
 import esphome.config_validation as cv
-from esphome.const import CONF_ADDRESS, CONF_DATA, CONF_ID
+from esphome.const import CONF_ADDRESS, CONF_DATA, CONF_ID, CONF_TRIGGER_ID
 from esphome.types import ConfigType
 
 CODEOWNERS = ["@meshmesh"]
@@ -14,13 +15,52 @@ MeshMeshDirectComponent = meshmesh_direct_ns.class_(
     "MeshMeshDirectComponent", cg.Component
 )
 
+# Handler interfaces that other components can use to register callbacks
+MeshMeshDirectReceivedPacketHandler = meshmesh_direct_ns.class_(
+    "MeshMeshDirectReceivedPacketHandler"
+)
+
+MeshMeshDirectHandlerTrigger = automation.Trigger.template(
+    cg.uint32,
+    cg.uint8.operator("const").operator("ptr"),
+    cg.uint8,
+)
+
+OnReceiveTrigger = meshmesh_direct_ns.class_(
+    "OnReceiveTrigger",
+    MeshMeshDirectHandlerTrigger,
+    MeshMeshDirectReceivedPacketHandler,
+)
+
+
 SendAction = meshmesh_direct_ns.class_("SendAction", automation.Action)
 
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(MeshMeshDirectComponent),
+        cv.Optional(CONF_ON_RECEIVE): automation.validate_automation(
+            {
+                cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(OnReceiveTrigger),
+            }
+        ),
     }
 )
+
+
+async def _trigger_to_code(config):
+    if address := config.get(CONF_ADDRESS):
+        address = address.parts
+    trigger = cg.new_Pvariable(config[CONF_TRIGGER_ID], address)
+    await automation.build_automation(
+        trigger,
+        [
+            (cg.uint32, "from"),
+            (cg.uint8.operator("const").operator("ptr"), "data"),
+            (cg.uint8, "size"),
+        ],
+        config,
+    )
+    return trigger
 
 
 async def to_code(config):
@@ -28,6 +68,10 @@ async def to_code(config):
     await cg.register_component(var, config)
 
     cg.add_define("USE_MESHMESH_DIRECT")
+
+    for on_receive in config.get(CONF_ON_RECEIVE, []):
+        trigger = await _trigger_to_code(on_receive)
+        cg.add(var.register_received_handler(trigger))
 
 
 # ========================================== A C T I O N S ================================================

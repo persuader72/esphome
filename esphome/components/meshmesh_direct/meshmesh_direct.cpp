@@ -1,5 +1,5 @@
 #include "meshmesh_direct.h"
-#include "entities.h"
+#include "commands.h"
 
 #include "esphome/components/meshmesh/commands.h"
 #include "esphome/core/log.h"
@@ -39,16 +39,56 @@ void MeshMeshDirectComponent::loop() {
     ESP_LOGVV(TAG, "Looping MeshMeshDirectComponent");
 }
 
+void MeshMeshDirectComponent::broadcastSend(uint8_t cmd, uint8_t *data, uint16_t len) {
+  uint8_t *buff = new uint8_t[len+2];
+  buff[0] = CMD_ENTITY_REQ;
+  buff[1] = cmd;
+  os_memcpy(buff+2, data, len);
+  mMeshmesh->broadCastSendData(data, len);
+  delete buff;
+}
+
+void MeshMeshDirectComponent::broadcastSendCustom(uint8_t *data, uint16_t len) {
+  broadcastSend(CUSTOM_DATA_REQ, data, len);
+}
+
+void MeshMeshDirectComponent::unicastSend(uint8_t cmd, uint8_t *data, uint16_t len, uint32_t addr) {
+  uint8_t *buff = new uint8_t[len+2];
+  buff[0] = CMD_ENTITY_REQ;
+  buff[1] = cmd;
+  os_memcpy(buff+2, data, len);
+  mMeshmesh->uniCastSendData(data, len, addr);
+  delete buff;
+}
+
+void MeshMeshDirectComponent::unicastSendCustom(uint8_t *data, uint16_t len, uint32_t addr) {
+  unicastSend(CUSTOM_DATA_REQ, data, len, addr);
+}
+
 int8_t MeshMeshDirectComponent::handleFrame(uint8_t *buf, uint16_t len, uint32_t from) {
+  if(len < 2 || buf[0] != CMD_ENTITY_REQ) {
+    return -1;
+  }
+
+  int8_t err = handleEntityFrame(buf+1, len-1, from);
+  return err;
+}
+
+int8_t MeshMeshDirectComponent::handleEntityFrame(uint8_t *buf, uint16_t len, uint32_t from) {
     ESP_LOGE(TAG, "Handling frame from %06X with length %d", from, len);
 
-    int8_t err = 0;
+    int8_t err = 1;
+    if(len < 1) {
+      return err;
+    }
+
     switch (buf[0]) {
-      case CMD_ENTITIES_COUNT_REQ:
+      case ENTITIES_COUNT_REQ:
       if (len == 1) {
-        uint8_t rep[LastEntity + 1];
-        rep[0] = CMD_ENTITIES_COUNT_REP;
-        uint8_t *buf = rep + 1;
+        uint8_t rep[LastEntity + 2];
+        rep[0] = CMD_ENTITY_REQ;
+        rep[1] = ENTITIES_COUNT_REP;
+        uint8_t *buf = rep + 2;
         os_memset(buf, 0, LastEntity);
 
 #ifdef USE_SENSOR
@@ -74,12 +114,12 @@ int8_t MeshMeshDirectComponent::handleFrame(uint8_t *buf, uint16_t len, uint32_t
         buf[TextSensorEntity] = (uint8_t) App.get_text_sensors().size();
         buf[AllEntities] += buf[TextSensorEntity];
 #endif
-        mMeshmesh->commandReply(rep, LastEntity + 1);
+        mMeshmesh->commandReply(rep, LastEntity + 2);
         err = 0;
       }
       break;
 
-    case CMD_ENTITY_HASH_REQ:
+    case ENTITY_HASH_REQ:
       if (len == 3) {
         uint8_t service = buf[1];
         uint8_t index = buf[2];
@@ -144,31 +184,33 @@ int8_t MeshMeshDirectComponent::handleFrame(uint8_t *buf, uint16_t len, uint32_t
         }
 
         if (hashfound) {
-          auto rep = new uint8_t[info.length() + 3];
-          rep[0] = CMD_ENTITY_HASH_REP;
-          uint16toBuffer(rep + 1, hash);
-          os_memcpy(rep + 3, info.c_str(), info.length());
-          mMeshmesh->commandReply(rep, 3 + info.length());
+          auto rep = new uint8_t[info.length() + 4];
+          rep[0] = CMD_ENTITY_REQ;
+          rep[1] = ENTITY_HASH_REP;
+          uint16toBuffer(rep + 2, hash);
+          os_memcpy(rep + 4, info.c_str(), info.length());
+          mMeshmesh->commandReply(rep, 4 + info.length());
           err = 0;
           delete rep;
         } else {
-          uint8_t rep[5];
-          rep[0] = CMD_ENTITY_HASH_REP;
-          rep[1] = 0;
+          uint8_t rep[6];
+          rep[0] = CMD_ENTITY_REQ;
+          rep[1] = ENTITY_HASH_REP;
           rep[2] = 0;
-          rep[3] = 'E';
-          rep[4] = '!';
-          mMeshmesh->commandReply(rep, 5);
+          rep[3] = 0;
+          rep[4] = 'E';
+          rep[5] = '!';
+          mMeshmesh->commandReply(rep, 6);
           err = 0;
         }
       }
       break;
 
-    case CMD_GET_ENTITY_STATE_REQ:
+    case GET_ENTITY_STATE_REQ:
       if (len == 4) {
         EnityType type = (EnityType) buf[1];
         uint16_t hash = uint16FromBuffer(buf + 2);
-        ESP_LOGD(TAG, "CMD_GET_ENTITY_STATE_REQ %04X hash %d type", hash, type);
+        ESP_LOGD(TAG, "GET_ENTITY_STATE_REQ %04X hash %d type", hash, type);
         int16_t value = 0;
         std::string value_str;
         uint8_t value_type = 0;
@@ -218,28 +260,30 @@ int8_t MeshMeshDirectComponent::handleFrame(uint8_t *buf, uint16_t len, uint32_t
         }
 
         if (value_type == 1) {
-          uint8_t rep[3];
-          rep[0] = CMD_GET_ENTITY_STATE_REP;
-          uint16toBuffer(rep + 1, value);
-          mMeshmesh->commandReply(rep, 3);
+          uint8_t rep[4];
+          rep[0] = CMD_ENTITY_REQ;
+          rep[1] = GET_ENTITY_STATE_REP;
+          uint16toBuffer(rep + 2, value);
+          mMeshmesh->commandReply(rep, 4);
           err = 0;
         } else if (value_type == 2) {
-          uint16_t rep_size = 2 + value_str.length();
+          uint16_t rep_size = 3 + value_str.length();
           auto *rep = new uint8_t[rep_size];
-          rep[0] = CMD_GET_ENTITY_STATE_REP;
-          rep[1] = value_type;
-          os_memcpy(rep + 2, value_str.data(), value_str.length());
+          rep[0] = CMD_ENTITY_REQ;
+          rep[1] = GET_ENTITY_STATE_REP;
+          rep[2] = value_type;
+          os_memcpy(rep + 3, value_str.data(), value_str.length());
           mMeshmesh->commandReply(rep, rep_size);
           err = 0;
         }
       }
       break;
-    case CMD_SET_ENTITY_STATE_REQ:
+    case SET_ENTITY_STATE_REQ:
       if (len == 6) {
         EnityType type = (EnityType) buf[1];
         uint16_t hash = uint16FromBuffer(buf + 2);
         uint16_t value = uint16FromBuffer(buf + 4);
-        ESP_LOGD(TAG, "CMD_SET_ENTITY_STATE_REQ type %d hash %04X value %d", type, hash, value);
+        ESP_LOGD(TAG, "SET_ENTITY_STATE_REQ type %d hash %04X value %d", type, hash, value);
         bool valuefound = 0;
 
         switch (type) {
@@ -277,20 +321,21 @@ int8_t MeshMeshDirectComponent::handleFrame(uint8_t *buf, uint16_t len, uint32_t
         }
 
         if (valuefound) {
-          uint8_t rep[1];
-          rep[0] = CMD_SET_ENTITY_STATE_REP;
-          mMeshmesh->commandReply(rep, 1);
+          uint8_t rep[2];
+          rep[0] = CMD_ENTITY_REQ;
+          rep[1] = SET_ENTITY_STATE_REP;
+          mMeshmesh->commandReply(rep, 2);
           err = 0;
         }
       }
       break;
 
-    case CMD_PUB_ENTITY_STATE_REQ:
+    case PUB_ENTITY_STATE_REQ:
       if (len == 6) {
         EnityType type = (EnityType) buf[1];
         uint16_t hash = uint16FromBuffer(buf + 2);
         uint16_t value = uint16FromBuffer(buf + 4);
-        ESP_LOGD(TAG, "CMD_PUB_ENTITY_STATE_REQ type %d hash %04X value %d", type, hash, value);
+        ESP_LOGD(TAG, "PUB_ENTITY_STATE_REQ type %d hash %04X value %d", type, hash, value);
 
         switch (type) {
           case LightEntity: {
@@ -315,17 +360,22 @@ int8_t MeshMeshDirectComponent::handleFrame(uint8_t *buf, uint16_t len, uint32_t
             break;
         }
 
-        uint8_t rep[1];
-        rep[0] = CMD_PUB_ENTITY_STATE_REP;
-        mMeshmesh->commandReply(rep, 1);
+        uint8_t rep[2];
+        rep[0] = CMD_ENTITY_REQ;
+        rep[1] = PUB_ENTITY_STATE_REP;
+        mMeshmesh->commandReply(rep, 2);
         err = 0;
       }
       break;
 
-    case CMD_ENTITY_REQ:  // 48
-      if (len > 1) {
-        ESP_LOGD(TAG, "CMD_ENTITY_REQ len %d", len);
-        err = Entities::handle_frame(buf + 1, len - 1, mMeshmesh);
+    case CUSTOM_DATA_REQ:
+      if(len > 1) {
+        uint8_t *data = buf + 1;
+        for(auto handler : mReceivedHandlers) {
+          handler->on_received(from, data, len-1);
+        }
+      } else {
+        err = -1;
       }
       break;
     default:
@@ -333,7 +383,6 @@ int8_t MeshMeshDirectComponent::handleFrame(uint8_t *buf, uint16_t len, uint32_t
         break;
     }
 
-    // mMeshmesh->commandReply(data, len);
     return err;
 }
 
@@ -366,7 +415,6 @@ sensor::Sensor *MeshMeshDirectComponent::findSensor(uint16_t hash) {
 #endif
 
 #ifdef USE_BINARY_SENSOR
-
 binary_sensor::BinarySensor *MeshMeshDirectComponent::findBinarySensor(uint16_t hash) {
   binary_sensor::BinarySensor *result = nullptr;
   auto sensors = App.get_binary_sensors();
@@ -422,12 +470,13 @@ switch_::Switch *MeshMeshDirectComponent::findSwitch(uint16_t hash) {
 }
 
 void MeshMeshDirectComponent::publishRemoteSwitchState(uint32_t addr, uint16_t hash, bool state) {
-  uint8_t buff[6];
-  buff[0] = CMD_PUB_ENTITY_STATE_REQ;
-  buff[1] = SwitchEntity;
-  uint16toBuffer(buff+2, hash);
-  uint16toBuffer(buff+4, state ? 10 : 0);
-  mMeshmesh->uniCastSendData(buff, 6, addr);
+  uint8_t buff[7];
+  buff[0] = CMD_ENTITY_REQ;
+  buff[1] = PUB_ENTITY_STATE_REQ;
+  buff[2] = SwitchEntity;
+  uint16toBuffer(buff+3, hash);
+  uint16toBuffer(buff+5, state ? 10 : 0);
+  mMeshmesh->uniCastSendData(buff, 7, addr);
 }
 #endif
 
