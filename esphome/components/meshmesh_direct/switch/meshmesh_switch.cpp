@@ -1,6 +1,6 @@
 #include "meshmesh_switch.h"
 #include "esphome/core/log.h"
-#include "../commands.h"
+#include "esphome/components/meshmesh/commands.h"
 
 namespace esphome {
 namespace meshmesh {
@@ -17,7 +17,7 @@ struct MeshMeshSwitchState {
 
 void MeshMeshSwitch::setup() {
   ESP_LOGCONFIG(TAG, "Setting up MeshMesh Switch '%s'...", this->name_.c_str());
-  mMeshMesh = MeshmeshComponent::getInstance();
+  mMMDirect = MeshMeshDirectComponent::getInstance();
   mPreferences = global_preferences->make_preference<MeshMeshSwitchState>(get_object_id_hash(), true);
 
   struct MeshMeshSwitchState preferencesdata = {mAddress, mHash, false};
@@ -79,13 +79,13 @@ void MeshMeshSwitch::dump_config() {
 }
 
 void MeshMeshSwitch::write_state(bool state) {
-  if(mMeshMesh) {
+  if(mMMDirect && mMMDirect->meshmesh()) {
     uint8_t buff[6];
     buff[0] = CMD_SET_ENTITY_STATE_REQ;
-    buff[1] = MeshmeshComponent::SwitchEntity;
+    buff[1] = MeshMeshDirectComponent::SwitchEntity;
     uint16toBuffer(buff+2, mHash);
     uint16toBuffer(buff+4, state ? 10 : 0);
-    mMeshMesh->uniCastSendData(buff, 6, mAddress);
+    mMMDirect->meshmesh()->uniCastSendData(buff, 6, mAddress);
   }
 
   this->publish_state(state);

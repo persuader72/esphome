@@ -1,6 +1,7 @@
 #include "entities.h"
-#include "commands.h"
-#include "meshmesh.h"
+#include "meshmesh_direct.h"
+#include "esphome/components/meshmesh/commands.h"
+#include "esphome/components/meshmesh/meshmesh.h"
 
 #include <esphome/core/log.h>
 #ifdef USE_BINARY_SENSOR
@@ -27,15 +28,15 @@ uint8_t Entities::handle_frame(uint8_t *buf, uint16_t len, MeshmeshComponent *pa
 
 	case ENTITY_PREFS_NUM_REQ:
 		if(len == 4) {
-            MeshmeshComponent::EnityType type = (MeshmeshComponent::EnityType)buf[1];
+            MeshMeshDirectComponent::EnityType type = (MeshMeshDirectComponent::EnityType)buf[1];
 			uint16_t hash = uint16FromBuffer(buf+2);
 			ESP_LOGD(TAG, "ENTITY_PREFS_NUM_REQ type %d hash %04X", type, hash);
 			bool valuefound = false;
             uint16_t value;
 
 			switch(type) {
-				case MeshmeshComponent::LightEntity: { } break;
-				case MeshmeshComponent::BinarySensorEntity: {
+				case MeshMeshDirectComponent::LightEntity: { } break;
+				case MeshMeshDirectComponent::BinarySensorEntity: {
 #ifdef USE_BINARY_SENSOR
 					//auto *state = parent->findBinarySensor(hash);
 #ifdef USE_LIGHT_PRESENCE
@@ -64,7 +65,7 @@ uint8_t Entities::handle_frame(uint8_t *buf, uint16_t len, MeshmeshComponent *pa
 
 	case ENTITY_GET_PREFS_REQ:
 		if(len == 6) {
-            MeshmeshComponent::EnityType type = (MeshmeshComponent::EnityType)buf[1];
+            MeshMeshDirectComponent::EnityType type = (MeshMeshDirectComponent::EnityType)buf[1];
 			uint16_t hash = uint16FromBuffer(buf+2);
 			uint16_t num = uint16FromBuffer(buf+4);
 			ESP_LOGD(TAG, "ENTITY_GET_PREFS_REQ type %d hash %04X num %d", type, hash, num);
@@ -72,8 +73,8 @@ uint8_t Entities::handle_frame(uint8_t *buf, uint16_t len, MeshmeshComponent *pa
             uint16_t value;
 
 			switch(type) {
-				case MeshmeshComponent::LightEntity: { } break;
-				case MeshmeshComponent::BinarySensorEntity: {
+				case MeshMeshDirectComponent::LightEntity: { } break;
+				case MeshMeshDirectComponent::BinarySensorEntity: {
 #ifdef USE_BINARY_SENSOR
 					//auto *state = parent->findBinarySensor(hash);
 #ifdef USE_LIGHT_PRESENCE
@@ -102,7 +103,7 @@ uint8_t Entities::handle_frame(uint8_t *buf, uint16_t len, MeshmeshComponent *pa
 
     case ENTITY_SET_PREFS_REQ:
 		if(len == 8) {
-			MeshmeshComponent::EnityType type = (MeshmeshComponent::EnityType)buf[1];
+			MeshMeshDirectComponent::EnityType type = (MeshMeshDirectComponent::EnityType)buf[1];
 			uint16_t hash = uint16FromBuffer(buf+2);
 			uint16_t num = uint16FromBuffer(buf+4);
 			uint16_t value = uint16FromBuffer(buf+6);
@@ -110,8 +111,8 @@ uint8_t Entities::handle_frame(uint8_t *buf, uint16_t len, MeshmeshComponent *pa
 			bool valuefound = false;
 
 			switch(type) {
-				case MeshmeshComponent::LightEntity: { } break;
-				case MeshmeshComponent::BinarySensorEntity: {
+				case MeshMeshDirectComponent::LightEntity: { } break;
+				case MeshMeshDirectComponent::BinarySensorEntity: {
 #ifdef USE_BINARY_SENSOR
 					//auto *state = parent->findBinarySensor(hash);
 					//if(state->get_device_class() == "presence") {
