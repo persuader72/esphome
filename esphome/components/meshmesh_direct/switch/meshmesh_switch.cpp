@@ -1,6 +1,9 @@
 #include "meshmesh_switch.h"
 #include "esphome/core/log.h"
-#include "esphome/components/meshmesh/commands.h"
+
+#include "esphome/components/meshmesh_direct/meshmesh_direct.h"
+#include "esphome/components/meshmesh_direct/commands.h"
+
 
 namespace esphome {
 namespace meshmesh {
@@ -80,12 +83,11 @@ void MeshMeshSwitch::dump_config() {
 
 void MeshMeshSwitch::write_state(bool state) {
   if(mMMDirect && mMMDirect->meshmesh()) {
-    uint8_t buff[6];
-    buff[0] = CMD_SET_ENTITY_STATE_REQ;
-    buff[1] = MeshMeshDirectComponent::SwitchEntity;
-    uint16toBuffer(buff+2, mHash);
-    uint16toBuffer(buff+4, state ? 10 : 0);
-    mMMDirect->meshmesh()->uniCastSendData(buff, 6, mAddress);
+    uint8_t buff[5];
+    buff[0] = MeshMeshDirectComponent::SwitchEntity;
+    uint16toBuffer(buff+1, mHash);
+    uint16toBuffer(buff+3, state ? 10 : 0);
+    mMMDirect->unicastSend(SET_ENTITY_STATE_REQ, buff, 5, mAddress);
   }
 
   this->publish_state(state);

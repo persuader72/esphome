@@ -3,11 +3,11 @@
 #include "esphome/core/component.h"
 #include "esphome/core/preferences.h"
 #include "esphome/components/switch/switch.h"
-#include "esphome/components/meshmesh_direct/meshmesh_direct.h"
 
 namespace esphome {
 namespace meshmesh {
 
+class MeshMeshDirectComponent;
 class MeshMeshSwitch : public switch_::Switch, public Component {
 public:
   void set_target(uint16_t hash, uint32_t address) { mHash = hash; mAddress = address; }

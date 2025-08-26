@@ -27,10 +27,15 @@
 
 #define CMD_REBOOT_REQ 0x18
 #define CMD_REBOOT_REP 0x19
+
+// MeshMesh Discovery subdomain Commands
 #define CMD_DISCOVERY_REQ 0x1A
 #define CMD_DISCOVERY_REP 0x1B
+
 #define CMD_RSSICHECK_REQ 0x1C
 #define CMD_RSSICHECK_REP 0x1D
+
+// MeshMesh Flash operations subdomain commands
 #define CMD_FLASH_OPER_REQ 0x1E
 #define CMD_FLASH_OPER_REP 0x1F
 
@@ -39,16 +44,7 @@
 #define CMD_GROUPS_SET_REQ 0x22
 #define CMD_GROUPS_SET_REP 0x23
 
-#define CMD_ENTITIES_COUNT_REQ 0x26
-#define CMD_ENTITIES_COUNT_REP 0x27
-#define CMD_ENTITY_HASH_REQ 0x28
-#define CMD_ENTITY_HASH_REP 0x29
-#define CMD_GET_ENTITY_STATE_REQ 0x2A
-#define CMD_GET_ENTITY_STATE_REP 0x2B
-#define CMD_SET_ENTITY_STATE_REQ 0x2C
-#define CMD_SET_ENTITY_STATE_REP 0x2D
-#define CMD_PUB_ENTITY_STATE_REQ 0x2E
-#define CMD_PUB_ENTITY_STATE_REP 0x2F
+// MeshMesh Direct subdomain commands
 #define CMD_ENTITY_REQ 0x30
 #define CMD_ENTITY_REP 0x31
 
