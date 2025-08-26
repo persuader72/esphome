@@ -52,6 +52,7 @@ class Switch;
 #endif
 namespace meshmesh {
 
+typedef std::function<int8_t(uint8_t *data, uint16_t len, uint32_t from)> HandleFrameCbFn;
 typedef void (*EspHomeDataReceivedCbFn)(uint16_t, uint8_t *, uint16_t);
 
 typedef enum { WAIT_MAGICK, WAIT_DATA, WAIT_ESCAPE } RecvState;
@@ -290,6 +291,11 @@ public:
 #endif
  private:
   friend class Entities;
+
+public:
+  void addHandleFrameCb(HandleFrameCbFn cb) { mHandleFrameCbs.push_back(cb); }
+private:
+  std::list<HandleFrameCbFn> mHandleFrameCbs;
 };
 
 }  // namespace meshmesh
