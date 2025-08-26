@@ -3,7 +3,7 @@
 #include "esphome/core/component.h"
 #include "esphome/core/preferences.h"
 #include "esphome/components/switch/switch.h"
-#include "../meshmesh.h"
+#include "esphome/components/meshmesh_direct/meshmesh_direct.h"
 
 namespace esphome {
 namespace meshmesh {
@@ -21,7 +21,7 @@ private:
   uint16_t mHash;
   uint32_t mAddress;
   ESPPreferenceObject mPreferences;
-  MeshmeshComponent *mMeshMesh{0};
+  MeshMeshDirectComponent *mMMDirect{0};
   switch_::SwitchRestoreMode restore_mode_{switch_::SWITCH_RESTORE_DEFAULT_OFF};
 };
 

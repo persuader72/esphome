@@ -96,16 +96,6 @@ class MeshmeshComponent : public Component {
     SRC_CONNPATH,
     SRC_FILTER
   } DataSrc;
-  typedef enum { UNKNOW = 0, LUX, LAST_SENSOR_TYPE } SensorTypes;
-  typedef enum {
-    AllEntities = 0,
-    SensorEntity,
-    BinarySensorEntity,
-    SwitchEntity,
-    LightEntity,
-    TextSensorEntity,
-    LastEntity
-  } EnityType;
 
  public:
   static MeshmeshComponent *singleton;
@@ -153,31 +143,6 @@ public:
   static unsigned long elapsedMillis(unsigned long t2, unsigned long t1) {
     return t2 >= t1 ? t2 - t1 : (~(t1 - t2)) + 1;
   }
-
- public:
-#ifdef USE_SWITCH
-  void publishRemoteSwitchState(uint32_t addr, uint16_t hash, bool state);
-#endif
-
- private:
-#ifdef USE_SENSOR
-  sensor::Sensor *findSensorByUnit(const std::string &unit);
-  sensor::Sensor *findSensor(uint16_t hash);
-#endif
-#ifdef USE_BINARY_SENSOR
-  binary_sensor::BinarySensor *findBinarySensor(uint16_t hash);
-#endif
-#ifdef USE_LIGHT
-  light::LightState *findLightState(uint16_t hash);
-#endif
-#ifdef USE_TEXT_SENSOR
-  text_sensor::TextSensor *findTextSensor(uint16_t hash);
-#endif
-#ifdef USE_SWITCH
-  switch_::Switch *findSwitch(uint16_t hash);
-#endif
- private:
-  EnityType findEntityTypeByHash(uint16_t hash);
 
  private:
 #ifdef USE_ESP_IDF
