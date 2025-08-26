@@ -1325,7 +1325,15 @@ void MeshmeshComponent::handleFrame(const uint8_t *data, uint16_t len, DataSrc s
       }
       break;
     default:
-      // Silently discard unknow commands
+      for (auto cb : mHandleFrameCbs) {
+        int8_t handled = cb(buf, len, from);
+        // If callback handled the frame...
+        if (handled >= 0) {
+          // Keep status and exit loop
+          err = handled;
+          break;
+        }
+      }
       break;
   }
 
