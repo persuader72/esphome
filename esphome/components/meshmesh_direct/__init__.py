@@ -7,6 +7,8 @@ from esphome.types import ConfigType
 CODEOWNERS = ["@meshmesh"]
 DEPENDENCIES = ["meshmesh"]
 
+byte_vector = cg.std_vector.template(cg.uint8)
+
 meshmesh_direct_ns = cg.esphome_ns.namespace("meshmesh")
 MeshMeshDirectComponent = meshmesh_direct_ns.class_(
     "MeshMeshDirectComponent", cg.Component
@@ -54,7 +56,7 @@ def _validate_raw_data(value):
 PEER_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.use_id(MeshMeshDirectComponent),
-        cv.Required(CONF_ADDRESS): cv.positive_int,
+        cv.Required(CONF_ADDRESS): cv.templatable(cv.positive_int),
     }
 )
 
@@ -83,7 +85,18 @@ async def send_action(
     template_arg: cg.TemplateArguments,
     args: list[tuple],
 ):
+    print(f"send_action: {config} {args}")
     var = cg.new_Pvariable(action_id, template_arg)
     await cg.register_parented(var, config[CONF_ID])
+
+    data = config.get(CONF_DATA, [])
+    if isinstance(data, str):
+        data = [cg.RawExpression(f"'{c}'") for c in data]
+    templ = await cg.templatable(data, args, byte_vector, byte_vector)
+    cg.add(var.set_data(templ))
+
+    peer = config[CONF_ADDRESS]
+    templ = await cg.templatable(peer, args, cg.uint32)
+    cg.add(var.set_address(templ))
 
     return var
