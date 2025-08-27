@@ -35,10 +35,10 @@ public:
 private:
   std::vector<MeshMeshDirectReceivedPacketHandler *> mReceivedHandlers;
 public:
-  void broadcastSend(uint8_t cmd, uint8_t *data, uint16_t len);
-  void broadcastSendCustom(uint8_t *data, uint16_t len);
-  void unicastSend(uint8_t cmd, uint8_t *data, uint16_t len, uint32_t addr);
-  void unicastSendCustom(uint8_t *data, uint16_t len, uint32_t addr);
+  void broadcastSend(const uint8_t cmd, const uint8_t *data, const uint16_t len);
+  void broadcastSendCustom(const uint8_t *data, const uint16_t len);
+  void unicastSend(const uint8_t cmd, const uint8_t *data, const uint16_t len, const uint32_t addr);
+  void unicastSendCustom(const uint8_t *data, const uint16_t len, const uint32_t addr);
 public:
 #ifdef USE_SWITCH
     void publishRemoteSwitchState(uint32_t addr, uint16_t hash, bool state);
@@ -63,8 +63,8 @@ private:
    private:
     EnityType findEntityTypeByHash(uint16_t hash);
 private:
-  int8_t handleFrame(uint8_t *data, uint16_t len, uint32_t from);
-  int8_t handleEntityFrame(uint8_t *data, uint16_t len, uint32_t from);
+  int8_t handleFrame(const uint8_t *data, uint16_t len, uint32_t from);
+  int8_t handleEntityFrame(const uint8_t *data, uint16_t len, uint32_t from);
 public:
   MeshmeshComponent *meshmesh() const { return mMeshmesh; }
 private:

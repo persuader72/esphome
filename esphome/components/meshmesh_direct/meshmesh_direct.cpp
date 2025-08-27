@@ -39,35 +39,35 @@ void MeshMeshDirectComponent::loop() {
     //ESP_LOGVV(TAG, "Looping MeshMeshDirectComponent");
 }
 
-void MeshMeshDirectComponent::broadcastSend(uint8_t cmd, uint8_t *data, uint16_t len) {
+void MeshMeshDirectComponent::broadcastSend(const uint8_t cmd, const uint8_t *data, const uint16_t len) {
   uint8_t *buff = new uint8_t[len+2];
   buff[0] = CMD_ENTITY_REQ;
   buff[1] = cmd;
   os_memcpy(buff+2, data, len);
-  mMeshmesh->broadCastSendData(data, len);
+  if(mMeshmesh) mMeshmesh->broadCastSendData(buff, len+2);
+  else ESP_LOGE(TAG, "Meshmesh parent not been initialized");
   delete buff;
 }
 
-void MeshMeshDirectComponent::broadcastSendCustom(uint8_t *data, uint16_t len) {
+void MeshMeshDirectComponent::broadcastSendCustom(const uint8_t *data, const uint16_t len) {
   broadcastSend(CUSTOM_DATA_REQ, data, len);
 }
 
-void MeshMeshDirectComponent::unicastSend(uint8_t cmd, uint8_t *data, uint16_t len, uint32_t addr) {
+void MeshMeshDirectComponent::unicastSend(const uint8_t cmd, const uint8_t *data, const uint16_t len, const uint32_t addr) {
   uint8_t *buff = new uint8_t[len+2];
   buff[0] = CMD_ENTITY_REQ;
   buff[1] = cmd;
   os_memcpy(buff+2, data, len);
-  mMeshmesh->uniCastSendData(buff, len+2, addr);
+  if(mMeshmesh) mMeshmesh->uniCastSendData(buff, len+2, addr);
+  else ESP_LOGE(TAG, "Meshmesh parent not been initialized");
   delete buff;
 }
 
-void MeshMeshDirectComponent::unicastSendCustom(uint8_t *data, uint16_t len, uint32_t addr) {
+void MeshMeshDirectComponent::unicastSendCustom(const uint8_t *data, const uint16_t len, const uint32_t addr) {
   unicastSend(CUSTOM_DATA_REQ, data, len, addr);
 }
 
-int8_t MeshMeshDirectComponent::handleFrame(uint8_t *buf, uint16_t len, uint32_t from) {
-  ESP_LOGD(TAG, "Handling frame from %06X with length %d", from, len);
-
+int8_t MeshMeshDirectComponent::handleFrame(const uint8_t *buf, uint16_t len, uint32_t from) {
   if(len < 2 || buf[0] != CMD_ENTITY_REQ) {
     return -1;
   }
@@ -76,12 +76,15 @@ int8_t MeshMeshDirectComponent::handleFrame(uint8_t *buf, uint16_t len, uint32_t
   return err;
 }
 
-int8_t MeshMeshDirectComponent::handleEntityFrame(uint8_t *buf, uint16_t len, uint32_t from) {
-    ESP_LOGD(TAG, "Handling frame from %06X with length %d", from, len);
-
+int8_t MeshMeshDirectComponent::handleEntityFrame(const uint8_t *buf, uint16_t len, uint32_t from) {
     int8_t err = 1;
     if(len < 1) {
-      return err;
+      return 1;
+    }
+
+    if (buf[0] & 0x01) {
+      // TODO handle reply to commands
+      return 0;
     }
 
     switch (buf[0]) {
@@ -372,10 +375,11 @@ int8_t MeshMeshDirectComponent::handleEntityFrame(uint8_t *buf, uint16_t len, ui
 
     case CUSTOM_DATA_REQ:
       if(len > 1) {
-        uint8_t *data = buf + 1;
+        const uint8_t *data = buf + 1;
         for(auto handler : mReceivedHandlers) {
           handler->on_received(from, data, len-1);
         }
+        err = 0;
       } else {
         err = -1;
       }
