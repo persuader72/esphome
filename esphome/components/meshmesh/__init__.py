@@ -37,7 +37,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional(CONF_HARDWARE_UART, default=0): cv.positive_int,
         cv.Optional(CONF_BAUD_RATE, default=460800): cv.positive_int,
         cv.Optional(CONF_RX_BUFFER_SIZE, default=2048): cv.validate_bytes,
-        cv.Optional(CONF_TX_BUFFER_SIZE, default=0): cv.validate_bytes,
+        cv.Optional(CONF_TX_BUFFER_SIZE, default=4096): cv.validate_bytes,
         cv.Required(CONF_CHANNEL): cv.positive_int,
         cv.Required(CONF_PASSWORD): cv.string,
         cv.Optional(CONF_TEST_MODE): cv.boolean,
