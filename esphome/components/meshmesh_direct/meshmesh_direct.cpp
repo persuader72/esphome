@@ -36,7 +36,7 @@ void MeshMeshDirectComponent::setup() {
 }
 
 void MeshMeshDirectComponent::loop() {
-    ESP_LOGVV(TAG, "Looping MeshMeshDirectComponent");
+    //ESP_LOGVV(TAG, "Looping MeshMeshDirectComponent");
 }
 
 void MeshMeshDirectComponent::broadcastSend(uint8_t cmd, uint8_t *data, uint16_t len) {
@@ -57,7 +57,7 @@ void MeshMeshDirectComponent::unicastSend(uint8_t cmd, uint8_t *data, uint16_t l
   buff[0] = CMD_ENTITY_REQ;
   buff[1] = cmd;
   os_memcpy(buff+2, data, len);
-  mMeshmesh->uniCastSendData(data, len, addr);
+  mMeshmesh->uniCastSendData(buff, len+2, addr);
   delete buff;
 }
 
@@ -66,6 +66,8 @@ void MeshMeshDirectComponent::unicastSendCustom(uint8_t *data, uint16_t len, uin
 }
 
 int8_t MeshMeshDirectComponent::handleFrame(uint8_t *buf, uint16_t len, uint32_t from) {
+  ESP_LOGD(TAG, "Handling frame from %06X with length %d", from, len);
+
   if(len < 2 || buf[0] != CMD_ENTITY_REQ) {
     return -1;
   }
@@ -75,7 +77,7 @@ int8_t MeshMeshDirectComponent::handleFrame(uint8_t *buf, uint16_t len, uint32_t
 }
 
 int8_t MeshMeshDirectComponent::handleEntityFrame(uint8_t *buf, uint16_t len, uint32_t from) {
-    ESP_LOGE(TAG, "Handling frame from %06X with length %d", from, len);
+    ESP_LOGD(TAG, "Handling frame from %06X with length %d", from, len);
 
     int8_t err = 1;
     if(len < 1) {
