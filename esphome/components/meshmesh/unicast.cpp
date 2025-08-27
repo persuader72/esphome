@@ -48,9 +48,9 @@ uint8_t Unicast::send(const uint8_t *data, uint16_t size, uint32_t target, uint1
 
 void Unicast::receiveRadioPacket(uint8_t *p, uint16_t size, uint32_t f, int16_t r) {
   UnicastHeader *header = (UnicastHeader *) p;
-  ESP_LOGD(TAG, "unicast_recv size=%d seq %d=%d", size, header->seqno, mLastSequenceNum);
+  ESP_LOGVV(TAG, "unicast_recv size=%d seq %d=%d", size, header->seqno, mLastSequenceNum);
   if (size < sizeof(UnicastHeaderSt) + header->lenght) {
-    ESP_LOGVV(TAG, "Unicast::recv invalid size %d but required %d", size, sizeof(UnicastHeaderSt) + header->lenght);
+    ESP_LOGE(TAG, "Unicast::recv invalid size %d but required %d", size, sizeof(UnicastHeaderSt) + header->lenght);
     return;
   }
 
