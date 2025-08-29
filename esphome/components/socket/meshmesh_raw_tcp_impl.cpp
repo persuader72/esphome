@@ -10,7 +10,9 @@
 #include "esphome/core/log.h"
 
 #include "esphome/components/meshmesh/meshmesh.h"
-#include "esphome/components/meshmesh/connectedpath.h"
+
+#include <espmeshmesh.h>
+#include <connectedpath.h>
 
 #define MAX_RX_QUEUE_SIZE 2048
 
@@ -23,7 +25,7 @@ class MeshmeshRawImpl : public Socket {
  public:
   MeshmeshRawImpl(uint32_t from, uint16_t handle, bool server) : mFrom(from), mHandle(handle), mServer(server) {
     ESP_LOGD(TAG, "MeshmeshRawImpl::MeshmeshRawImpl from %ld handle %d", from, handle);
-    mConnectedPath = meshmesh::MeshmeshComponent::getInstance()->getConnectedPath();
+    mConnectedPath = meshmesh::MeshmeshComponent::getInstance()->getNetwork()->getConnectedPath();
     if (!mServer) {
       mConnectedPath->setReceiveCallback(
           [](void *arg, const uint8_t *data, uint16_t size, uint8_t connid) {
@@ -237,7 +239,7 @@ class MeshmeshRawImpl : public Socket {
   uint16_t mHandle{0};
   bool mServer{false};
   bool mActive{true};
-  meshmesh::ConnectedPath *mConnectedPath{nullptr};
+  espmeshmesh::ConnectedPath *mConnectedPath{nullptr};
   std::queue<std::unique_ptr<MeshmeshRawImpl>> mAcceptedSockets;
   std::queue<uint8_t> mRxQueue;
 };

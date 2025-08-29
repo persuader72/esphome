@@ -3,6 +3,31 @@
 #include "esphome/core/component.h"
 #include "esphome/components/meshmesh/meshmesh.h"
 
+#ifdef USE_SENSOR
+#include "esphome/components/sensor/sensor.h"
+#endif
+
+#ifdef USE_BINARY_SENSOR
+#include "esphome/components/binary_sensor/binary_sensor.h"
+#endif
+
+
+#ifdef USE_SWITCH
+#include "esphome/components/switch/switch.h"
+#endif
+
+#ifdef USE_LIGHT
+#include "esphome/components/light/light_state.h"
+#endif
+
+#ifdef USE_TEXT_SENSOR
+#include "esphome/components/text_sensor/text_sensor.h"
+#endif
+
+namespace espmeshmesh {
+  class EspMeshMesh;
+}
+
 namespace esphome {
 namespace meshmesh {
 
@@ -66,9 +91,9 @@ private:
   int8_t handleFrame(const uint8_t *data, uint16_t len, uint32_t from);
   int8_t handleEntityFrame(const uint8_t *data, uint16_t len, uint32_t from);
 public:
-  MeshmeshComponent *meshmesh() const { return mMeshmesh; }
+  espmeshmesh::EspMeshMesh *meshmesh() const { return mMeshmesh; }
 private:
-  MeshmeshComponent *mMeshmesh{nullptr};
+  espmeshmesh::EspMeshMesh *mMeshmesh{nullptr};
 };
 }  // namespace meshmesh
 }  // namespace esphome
