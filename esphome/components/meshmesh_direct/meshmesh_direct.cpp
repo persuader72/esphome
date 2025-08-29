@@ -1,9 +1,10 @@
 #include "meshmesh_direct.h"
 #include "commands.h"
 
-#include "esphome/components/meshmesh/commands.h"
 #include "esphome/core/log.h"
 #include "esphome/core/application.h"
+
+#include <espmeshmesh.h>
 
 #include <functional>
 
@@ -31,7 +32,7 @@ MeshMeshDirectComponent::MeshMeshDirectComponent() : Component() {
 
 void MeshMeshDirectComponent::setup() {
     ESP_LOGE(TAG, "Setting up MeshMeshDirectComponent");
-    mMeshmesh = MeshmeshComponent::getInstance();
+    mMeshmesh = MeshmeshComponent::getInstance()->getNetwork();
     mMeshmesh->addHandleFrameCb(std::bind(&MeshMeshDirectComponent::handleFrame, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 }
 
@@ -192,7 +193,7 @@ int8_t MeshMeshDirectComponent::handleEntityFrame(const uint8_t *buf, uint16_t l
           auto rep = new uint8_t[info.length() + 4];
           rep[0] = CMD_ENTITY_REQ;
           rep[1] = ENTITY_HASH_REP;
-          uint16toBuffer(rep + 2, hash);
+          espmeshmesh::uint16toBuffer(rep + 2, hash);
           os_memcpy(rep + 4, info.c_str(), info.length());
           mMeshmesh->commandReply(rep, 4 + info.length());
           err = 0;
@@ -214,7 +215,7 @@ int8_t MeshMeshDirectComponent::handleEntityFrame(const uint8_t *buf, uint16_t l
     case GET_ENTITY_STATE_REQ:
       if (len == 4) {
         EnityType type = (EnityType) buf[1];
-        uint16_t hash = uint16FromBuffer(buf + 2);
+        uint16_t hash = espmeshmesh::uint16FromBuffer(buf + 2);
         ESP_LOGD(TAG, "GET_ENTITY_STATE_REQ %04X hash %d type", hash, type);
         int16_t value = 0;
         std::string value_str;
@@ -268,7 +269,7 @@ int8_t MeshMeshDirectComponent::handleEntityFrame(const uint8_t *buf, uint16_t l
           uint8_t rep[4];
           rep[0] = CMD_ENTITY_REQ;
           rep[1] = GET_ENTITY_STATE_REP;
-          uint16toBuffer(rep + 2, value);
+          espmeshmesh::uint16toBuffer(rep + 2, value);
           mMeshmesh->commandReply(rep, 4);
           err = 0;
         } else if (value_type == 2) {
@@ -286,8 +287,8 @@ int8_t MeshMeshDirectComponent::handleEntityFrame(const uint8_t *buf, uint16_t l
     case SET_ENTITY_STATE_REQ:
       if (len == 6) {
         EnityType type = (EnityType) buf[1];
-        uint16_t hash = uint16FromBuffer(buf + 2);
-        uint16_t value = uint16FromBuffer(buf + 4);
+        uint16_t hash = espmeshmesh::uint16FromBuffer(buf + 2);
+        uint16_t value = espmeshmesh::uint16FromBuffer(buf + 4);
         ESP_LOGD(TAG, "SET_ENTITY_STATE_REQ type %d hash %04X value %d", type, hash, value);
         bool valuefound = 0;
 
@@ -338,8 +339,8 @@ int8_t MeshMeshDirectComponent::handleEntityFrame(const uint8_t *buf, uint16_t l
     case PUB_ENTITY_STATE_REQ:
       if (len == 6) {
         EnityType type = (EnityType) buf[1];
-        uint16_t hash = uint16FromBuffer(buf + 2);
-        uint16_t value = uint16FromBuffer(buf + 4);
+        uint16_t hash = espmeshmesh::uint16FromBuffer(buf + 2);
+        uint16_t value = espmeshmesh::uint16FromBuffer(buf + 4);
         ESP_LOGD(TAG, "PUB_ENTITY_STATE_REQ type %d hash %04X value %d", type, hash, value);
 
         switch (type) {
@@ -480,8 +481,8 @@ void MeshMeshDirectComponent::publishRemoteSwitchState(uint32_t addr, uint16_t h
   buff[0] = CMD_ENTITY_REQ;
   buff[1] = PUB_ENTITY_STATE_REQ;
   buff[2] = SwitchEntity;
-  uint16toBuffer(buff+3, hash);
-  uint16toBuffer(buff+5, state ? 10 : 0);
+  espmeshmesh::uint16toBuffer(buff+3, hash);
+  espmeshmesh::uint16toBuffer(buff+5, state ? 10 : 0);
   mMeshmesh->uniCastSendData(buff, 7, addr);
 }
 #endif

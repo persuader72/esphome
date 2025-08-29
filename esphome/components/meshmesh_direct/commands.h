@@ -1,8 +1,11 @@
 #pragma once
+// MeshMesh Direct subdomain commands
+#define CMD_ENTITY_REQ 0x30
+#define CMD_ENTITY_REP 0x31
 
+// MeshMesh Direct commands
 #define CUSTOM_DATA_REQ 0x10
 #define CUSTOM_DATA_REP 0x11
-
 #define ENTITIES_COUNT_REQ 0x26
 #define ENTITIES_COUNT_REP 0x27
 #define ENTITY_HASH_REQ 0x28

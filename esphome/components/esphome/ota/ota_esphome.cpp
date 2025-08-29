@@ -10,6 +10,7 @@
 #include "esphome/components/ota/ota_backend_esp_idf.h"
 #ifdef USE_MESH_MESH
 #include "esphome/components/meshmesh/meshmesh.h"
+#include <espmeshmesh.h>
 #endif
 #include "esphome/core/application.h"
 #include "esphome/core/hal.h"
@@ -358,13 +359,13 @@ void ESPHomeOTAComponent::handle_data_() {
 */
 #ifdef USE_MESH_MESH
 #ifdef USE_ESP8266
-    meshmesh::MeshmeshComponent::getInstance()->setLockdownMode(true);
+    meshmesh::MeshmeshComponent::getInstance()->getNetwork()->setLockdownMode(true);
 #endif
 #endif
     error_code = backend->write(buf, read);
 #ifdef USE_MESH_MESH
 #ifdef USE_ESP8266
-    meshmesh::MeshmeshComponent::getInstance()->setLockdownMode(false);
+    meshmesh::MeshmeshComponent::getInstance()->getNetwork()->setLockdownMode(false);
 #endif
 #endif
     if (error_code != ota::OTA_RESPONSE_OK) {

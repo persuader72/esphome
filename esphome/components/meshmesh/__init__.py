@@ -74,4 +74,10 @@ async def to_code(config):
     if CORE.is_esp8266:
         cg.add_library("ESP8266WiFi", None)
 
+    cg.add_library(
+        name="ESPMeshMesh",
+        version="1.0.0",
+        repository="persuader72/ESPMeshMesh",
+    )
+
     await cg.register_component(var, config)
