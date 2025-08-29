@@ -3,6 +3,7 @@
 #include <discovery.h>
 #include <espmeshmesh.h>
 
+#include "esphome/core/application.h"
 #include "esphome/core/log.h"
 #include "esphome/core/preferences.h"
 #include "esphome/core/application.h"
@@ -102,6 +103,12 @@ void MeshmeshComponent::dump_config() {
 
 void MeshmeshComponent::loop() {
   mesh->loop();
+
+  if (mRebootRequested) {
+    if (millis() - mRebootRequestedTime > 250) {
+      App.reboot();
+    }
+  }
 }
 
 int8_t MeshmeshComponent::handleFrame(uint8_t *buf, uint16_t len, uint32_t from) {
@@ -200,8 +207,9 @@ int8_t MeshmeshComponent::handleFrame(uint8_t *buf, uint16_t len, uint32_t from)
       break;
     case CMD_REBOOT_REQ:
       if (len == 1) {
-        // FIXME: Handle reboot
         buf[0] = CMD_REBOOT_REP;
+        mRebootRequested = true;
+        mRebootRequestedTime = millis();
         mesh->commandReply(buf, 1);
         return HANDLE_UART_OK;
       }

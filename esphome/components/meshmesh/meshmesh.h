@@ -58,6 +58,9 @@ public:
 private:
   int8_t handleFrame(uint8_t *buf, uint16_t len, uint32_t from);
   espmeshmesh::EspMeshMesh *mesh;
+private:
+  bool mRebootRequested{false};
+  uint32_t mRebootRequestedTime{0};
 };
 
 void logPrintfCb(int level, const char *tag, int line, const char *format, va_list args);
