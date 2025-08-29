@@ -76,18 +76,16 @@ void MeshmeshComponent::preSetupPreferences() {
 
 
 void MeshmeshComponent::pre_setup() {
+  preSetupPreferences();
   mesh->pre_setup();
 }
 
 void MeshmeshComponent::setup() {
   espmeshmesh::EspMeshMeshSetupConfig config = {
     .hostname = App.get_name().c_str(),
-    .channel = mPreferences.channel,
+    .channel = mPreferences.channel == UINT8_MAX ? mConfigChannel : mPreferences.channel,
     .txPower = mPreferences.txPower,
   };
-  config.hostname = "meshmesh";
-  config.channel = mPreferences.channel;
-  config.txPower = mPreferences.txPower;
   mesh->setup(&config);
   mesh->addHandleFrameCb(std::bind(&MeshmeshComponent::handleFrame, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 }
@@ -107,6 +105,8 @@ void MeshmeshComponent::loop() {
 }
 
 int8_t MeshmeshComponent::handleFrame(uint8_t *buf, uint16_t len, uint32_t from) {
+  ESP_LOGD(TAG, "handleFrame: %d, len: %d, from: %d", buf[0], len, from);
+
   switch (buf[0]) {
     case CMD_NODE_TAG_REQ:
       if (len == 1) {
