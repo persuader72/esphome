@@ -351,83 +351,53 @@ int8_t MeshMeshDirectComponent::handleGetEntityStateFrame(const uint8_t *buf, ui
 }
 
 int8_t MeshMeshDirectComponent::handleSetEntityStateFrame(const uint8_t *buf, uint16_t len, uint32_t from) {
-  if (len == 4) {
-    EnityType type = (EnityType) buf[1];
-    uint16_t hash = espmeshmesh::uint16FromBuffer(buf + 2);
-    ESP_LOGD(TAG, "GET_ENTITY_STATE_REQ %04X hash %d type", hash, type);
+  if (len >= 7) {
+    uint8_t value_type = buf[1];
+    EnityType entity_type = (EnityType) buf[2];
+    uint16_t hash = espmeshmesh::uint16FromBuffer(buf + 3);
+    ESP_LOGD(TAG, "SET_ENTITY_STATE_REQ vty %d hash %04X type", value_type, hash, entity_type);
     int16_t value = 0;
-    std::string value_str;
-    uint8_t value_type = 0;
+    bool valuefound = false;
 
-    switch (type) {
-      case SensorEntity: {
-#ifdef USE_SENSOR
-        sensor::Sensor *sensor = findSensor(hash);
-        if(sensor) {
-          value = (int16_t) (sensor->state * 10.0);
-          value_type = 1;
-        }
-#endif
-      } break;
-      case BinarySensorEntity: {
-#ifdef USE_BINARY_SENSOR
-        binary_sensor::BinarySensor *binary = findBinarySensor(hash);
-        if(binary) {
-          value = binary->state ? 10 : 0;
-          value_type = 1;
-        }
-#endif
-      } break;
+    switch (entity_type) {
       case SwitchEntity: {
 #ifdef USE_SWITCH
         auto switch_ = findSwitch(hash);
-        if(switch_) {
-          value = switch_->state ? 1 : 0;
-          value_type = 1;
+        if(switch_ && value_type == 1) {
+          value = espmeshmesh::uint16FromBuffer(buf + 5);
+          if(value > 0)
+            switch_->turn_on();
+          else
+            switch_->turn_off();
+          valuefound = true;
         }
 #endif
       } break;
       case LightEntity: {
 #ifdef USE_LIGHT
         light::LightState *state = findLightState(hash);
-        if(state) {
-          if (state->current_values.get_state() == 0)
-            value = 0;
-          else
-            value = (uint16_t) (state->current_values.get_brightness() * 1024.0);
-          value_type = 1;
+        if(state && value_type == 1) {
+          value = espmeshmesh::uint16FromBuffer(buf + 5);
+          auto call = state->make_call();
+          call.set_state(value > 0 ? 1 : 0);
+          call.set_brightness((float) value / 1024.0f);
+          call.perform();
+          valuefound = true;
         }
 #endif
       } break;
-      case TextSensorEntity: {
-#ifdef USE_TEXT_SENSOR
-        text_sensor::TextSensor *texts = findTextSensor(hash);
-        if(texts) {
-          value_str = texts->state;
-          value_type = 2;
-        }
-#endif
-      } break;
+      case SensorEntity:
+      case BinarySensorEntity:
       case AllEntities:
       case LastEntity:
         break;
     }
 
-    if (value_type == 1) {
-      uint8_t rep[4];
+    if (valuefound) {
+      uint8_t rep[2];
       rep[0] = CMD_ENTITY_REQ;
       rep[1] = GET_ENTITY_STATE_REP;
-      espmeshmesh::uint16toBuffer(rep + 2, value);
-      mMeshmesh->commandReply(rep, 4);
-      return 0;
-    } else if (value_type == 2) {
-      uint16_t rep_size = 3 + value_str.length();
-      auto *rep = new uint8_t[rep_size];
-      rep[0] = CMD_ENTITY_REQ;
-      rep[1] = GET_ENTITY_STATE_REP;
-      rep[2] = value_type;
-      os_memcpy(rep + 3, value_str.data(), value_str.length());
-      mMeshmesh->commandReply(rep, rep_size);
+      mMeshmesh->commandReply(rep, 2);
       return 0;
     } else {
       ESP_LOGE(TAG, "handleSetEntityStateFrame: Unknown entity with hash %04X", hash);
@@ -487,7 +457,6 @@ int8_t MeshMeshDirectComponent::handleCustomDataFrame(const uint8_t *buf, uint16
 }
 
 int8_t MeshMeshDirectComponent::handleCommandReply(const uint8_t *buf, uint16_t len, uint32_t from) {
-  ESP_LOGD(TAG, "handleCommandReply: len %d handlers %d", len, mCommandReplyHandlers.size());
   if (len >= 1) {
     uint8_t cmd = buf[0];
     for (auto handler : mCommandReplyHandlers) {
@@ -496,7 +465,7 @@ int8_t MeshMeshDirectComponent::handleCommandReply(const uint8_t *buf, uint16_t 
       }
     }
   }
-  return 1;
+  return 0;
 }
 
 #ifdef USE_SENSOR

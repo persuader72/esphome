@@ -74,11 +74,12 @@ bool MeshMeshSwitch::onCommandReply(uint32_t from, uint8_t cmd, const uint8_t *d
 
 void MeshMeshSwitch::write_state(bool state) {
   if(mMMDirect && mMMDirect->meshmesh()) {
-    uint8_t buff[5];
-    buff[0] = MeshMeshDirectComponent::SwitchEntity;
-    espmeshmesh::uint16toBuffer(buff+1, mHash);
-    espmeshmesh::uint16toBuffer(buff+3, state ? 10 : 0);
-    mMMDirect->unicastSend(SET_ENTITY_STATE_REQ, buff, 5, mAddress);
+    uint8_t buff[6];
+    buff[0] = 1;
+    buff[1] = MeshMeshDirectComponent::SwitchEntity;
+    espmeshmesh::uint16toBuffer(buff+2, mHash);
+    espmeshmesh::uint16toBuffer(buff+4, state ? 10 : 0);
+    mMMDirect->unicastSend(SET_ENTITY_STATE_REQ, buff, 6, mAddress);
   }
 
   this->publish_state(state);
