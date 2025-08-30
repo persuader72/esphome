@@ -1,28 +1,33 @@
 #pragma once
 
 #include "esphome/core/component.h"
-#include "esphome/core/preferences.h"
 #include "esphome/components/switch/switch.h"
+#include "esphome/components/meshmesh_direct/meshmesh_direct.h"
 
 namespace esphome {
 namespace meshmesh {
 
 class MeshMeshDirectComponent;
-class MeshMeshSwitch : public switch_::Switch, public Component {
+class MeshMeshSwitch : public switch_::Switch, public Component, public MeshMeshDirectCommandReplyHandler {
 public:
   void set_target(uint16_t hash, uint32_t address) { mHash = hash; mAddress = address; }
-  void set_restore_mode(switch_::SwitchRestoreMode restore_mode);
   float get_setup_priority() const override;
   void setup() override;
+  void loop() override;
   void dump_config() override;
+public:
+  void queryRemoteState();
+  bool onCommandReply(uint32_t from, uint8_t cmd, const uint8_t *data, uint16_t len) override;
 protected:
   void write_state(bool state) override;
 private:
+  bool mRequestUpdate{false};
+  uint32_t mRequestTime{0};
+  uint32_t mLastQueryTime{0};
+private:
   uint16_t mHash;
   uint32_t mAddress;
-  ESPPreferenceObject mPreferences;
   MeshMeshDirectComponent *mMMDirect{0};
-  switch_::SwitchRestoreMode restore_mode_{switch_::SWITCH_RESTORE_DEFAULT_OFF};
 };
 
 }  // namespace gpio

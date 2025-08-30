@@ -43,6 +43,16 @@ class MeshMeshDirectReceivedPacketHandler {
    virtual bool on_received(uint32_t from, const uint8_t *data, uint8_t size) = 0;
  };
 
+class MeshMeshDirectCommandReplyHandler {
+public:
+  /// Called when a MeshMeshDirect command reply is received
+  /// @param from From address of the received packet
+  /// @param cmd Command type
+  /// @param data Pointer to the received data payload
+  /// @param len Size of the received data in bytes
+  /// @return true if the packet was handled, false otherwise
+  virtual bool onCommandReply(uint32_t from, uint8_t cmd, const uint8_t *data, uint16_t len) = 0;
+};
 
 class MeshMeshDirectComponent : public Component {
 public:
@@ -54,11 +64,19 @@ public:
 public:
   MeshMeshDirectComponent();
   void setup();
-  void loop() override;
-public:
+  void dump_config() override;
+  // messhmesh: BEFORE_CONNECTION --> meshmesh_direct AFTER_CONNECTION --> Entities: LATE
+  float get_setup_priority() const override { return setup_priority::AFTER_CONNECTION; }
+  // Custom data received handlers
+  public:
   void register_received_handler(MeshMeshDirectReceivedPacketHandler *handler) { this->mReceivedHandlers.push_back(handler); }
 private:
   std::vector<MeshMeshDirectReceivedPacketHandler *> mReceivedHandlers;
+// Command reply handlers
+public:
+  void registerCommandReplyHandler(MeshMeshDirectCommandReplyHandler *handler) { this->mCommandReplyHandlers.push_back(handler); }
+private:
+  std::vector<MeshMeshDirectCommandReplyHandler *> mCommandReplyHandlers;
 public:
   void broadcastSend(const uint8_t cmd, const uint8_t *data, const uint16_t len);
   void broadcastSendCustom(const uint8_t *data, const uint16_t len);
@@ -90,6 +108,15 @@ private:
 private:
   int8_t handleFrame(const uint8_t *data, uint16_t len, uint32_t from);
   int8_t handleEntityFrame(const uint8_t *data, uint16_t len, uint32_t from);
+  int8_t handleEntitiesCountFrame(const uint8_t *data, uint16_t len, uint32_t from);
+  int8_t handleGetEntityHashFrame(const uint8_t *data, uint16_t len, uint32_t from);
+  int8_t handleGetEntityStateFrame(const uint8_t *data, uint16_t len, uint32_t from);
+  int8_t handleSetEntityStateFrame(const uint8_t *data, uint16_t len, uint32_t from);
+  int8_t handlePublishEntityStateFrame(const uint8_t *data, uint16_t len, uint32_t from);
+  int8_t handleCustomDataFrame(const uint8_t *data, uint16_t len, uint32_t from);
+private:
+int8_t handleCommandReply(const uint8_t *data, uint16_t len, uint32_t from);
+// Parent ESPMeshMesh component
 public:
   espmeshmesh::EspMeshMesh *meshmesh() const { return mMeshmesh; }
 private:

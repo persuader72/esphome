@@ -4,13 +4,14 @@
 #include "esphome/components/meshmesh_direct/meshmesh_direct.h"
 #include "esphome/components/meshmesh_direct/commands.h"
 
+#include <packetbuf.h>
 
 namespace esphome {
 namespace meshmesh {
 
-static const char *TAG = "meshmesh.switch";
+static const char *TAG = "meshmesh_direct.switch";
 
-float MeshMeshSwitch::get_setup_priority() const { return setup_priority::HARDWARE; }
+float MeshMeshSwitch::get_setup_priority() const { return setup_priority::LATE; }
 
 struct MeshMeshSwitchState {
   uint32_t address;
@@ -19,81 +20,65 @@ struct MeshMeshSwitchState {
 };
 
 void MeshMeshSwitch::setup() {
-  ESP_LOGCONFIG(TAG, "Setting up MeshMesh Switch '%s'...", this->name_.c_str());
   mMMDirect = MeshMeshDirectComponent::getInstance();
-  mPreferences = global_preferences->make_preference<MeshMeshSwitchState>(get_object_id_hash(), true);
-
-  struct MeshMeshSwitchState preferencesdata = {mAddress, mHash, false};
-  if(this->restore_mode_ == switch_::SWITCH_RESTORE_DEFAULT_ON) preferencesdata.initalState = true;
-
-  if(mPreferences.load(&preferencesdata)) {
-    mAddress = preferencesdata.address;
-    mHash = preferencesdata.hash;
-  }
-
-  switch (this->restore_mode_) {
-    case switch_::SWITCH_ALWAYS_OFF:
-      preferencesdata.initalState = false;
-      break;
-    case switch_::SWITCH_ALWAYS_ON:
-      preferencesdata.initalState = true;
-      break;
-    case switch_::SWITCH_RESTORE_DEFAULT_OFF:
-    case switch_::SWITCH_RESTORE_DEFAULT_ON:
-    case switch_::SWITCH_RESTORE_INVERTED_DEFAULT_OFF:
-    case switch_::SWITCH_RESTORE_INVERTED_DEFAULT_ON:
-    case switch_::SWITCH_RESTORE_DISABLED:
-      // TODO
-      break;
-  }
-
-  // write state before setup
-  if(preferencesdata.initalState) this->turn_on(); else this->turn_off();
+  mRequestUpdate = true;
+  mRequestTime = millis();
 }
 
-void MeshMeshSwitch::dump_config() {
-  LOG_SWITCH("", "GPIO Switch", this);
-  //LOG_PIN("  Pin: ", this->pin_);
-  const char *restore_mode = "";
-  switch (this->restore_mode_) {
-    case switch_::SWITCH_RESTORE_DEFAULT_OFF:
-      restore_mode = "Restore (Defaults to OFF)";
-      break;
-    case switch_::SWITCH_RESTORE_DEFAULT_ON:
-      restore_mode = "Restore (Defaults to ON)";
-      break;
-    case switch_::SWITCH_ALWAYS_OFF:
-      restore_mode = "Always OFF";
-      break;
-    case switch_::SWITCH_ALWAYS_ON:
-      restore_mode = "Always ON";
-      break;
-    case switch_::SWITCH_RESTORE_INVERTED_DEFAULT_OFF:
-      restore_mode = "Restore (Defaults to OFF, Inverted)";
-      break;
-    case switch_::SWITCH_RESTORE_INVERTED_DEFAULT_ON:
-      restore_mode = "Restore (Defaults to ON, Inverted)";
-      break;
-    case switch_::SWITCH_RESTORE_DISABLED:
-      restore_mode = "Restore (Disabled)";
-      break;
+void MeshMeshSwitch::loop() {
+  if(mRequestUpdate && millis() - mRequestTime > 500) {
+    mLastQueryTime = millis();
+    queryRemoteState();
+    mRequestUpdate = false;
+    mRequestTime = 0;
   }
-  ESP_LOGCONFIG(TAG, "  Restore Mode: %s", restore_mode);
+
+  if(mLastQueryTime>0 && (millis() - mLastQueryTime) > 1000) {
+    mLastQueryTime = 0;
+    ESP_LOGW(TAG, "Remote switch '%s' timed out", this->name_.c_str());
+  }
+}
+
+
+void MeshMeshSwitch::dump_config() {
+  ESP_LOGCONFIG(TAG, "Setting up remote switch '%s'...", this->name_.c_str());
+  ESP_LOGCONFIG(TAG, " Remote address: 0x%06X", mAddress);
+  ESP_LOGCONFIG(TAG, " Remote target: 0x%04X", mHash);
+}
+
+void MeshMeshSwitch::queryRemoteState() {
+  if(mMMDirect && mMMDirect->meshmesh()) {
+    uint8_t buff[3];
+    buff[0] = MeshMeshDirectComponent::SwitchEntity;
+    espmeshmesh::uint16toBuffer(buff+1, mHash);
+    mMMDirect->unicastSend(GET_ENTITY_STATE_REQ, buff, 3, mAddress);
+  }
+}
+
+bool MeshMeshSwitch::onCommandReply(uint32_t from, uint8_t cmd, const uint8_t *data, uint16_t len) {
+  if(cmd == GET_ENTITY_STATE_REP) {
+    if(len == 4) {
+      uint16_t hash = espmeshmesh::uint16FromBuffer(data);
+      if(hash == mHash) {
+        this->publish_state(data[2] > 0 ? true : false);
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 void MeshMeshSwitch::write_state(bool state) {
   if(mMMDirect && mMMDirect->meshmesh()) {
     uint8_t buff[5];
     buff[0] = MeshMeshDirectComponent::SwitchEntity;
-    uint16toBuffer(buff+1, mHash);
-    uint16toBuffer(buff+3, state ? 10 : 0);
+    espmeshmesh::uint16toBuffer(buff+1, mHash);
+    espmeshmesh::uint16toBuffer(buff+3, state ? 10 : 0);
     mMMDirect->unicastSend(SET_ENTITY_STATE_REQ, buff, 5, mAddress);
   }
 
   this->publish_state(state);
 }
 
-void MeshMeshSwitch::set_restore_mode(switch_::SwitchRestoreMode restore_mode) { this->restore_mode_ = restore_mode; }
-
-}  // namespace gpio
+}  // namespace meshmesh
 }  // namespace esphome
