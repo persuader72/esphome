@@ -47,6 +47,21 @@ void MeshMeshDirectComponent::broadcastSend(const uint8_t cmd, const uint8_t *da
 
 void MeshMeshDirectComponent::dump_config() {
   ESP_LOGCONFIG(TAG, "Setting up MeshMeshDirectComponent");
+  #ifdef USE_SENSOR
+  for (auto sensor : App.get_sensors()) {
+    ESP_LOGCONFIG(TAG, "Found sensor %s with hash %08X", sensor->get_object_id().c_str(), sensor->get_object_id_hash());
+  }
+#endif
+#ifdef USE_BINARY_SENSOR
+  for (auto sensor : App.get_binary_sensors()) {
+    ESP_LOGCONFIG(TAG, "Found sensor %s with hash %08X", sensor->get_object_id().c_str(), sensor->get_object_id_hash());
+  }
+#endif
+#ifdef USE_SWITCH
+  for (auto switch_ : App.get_switches()) {
+    ESP_LOGCONFIG(TAG, "Found switch %s with hash %08X", switch_->get_object_id().c_str(), switch_->get_object_id_hash());
+  }
+#endif
 }
 
 void MeshMeshDirectComponent::broadcastSendCustom(const uint8_t *data, const uint16_t len) {
@@ -257,39 +272,49 @@ int8_t MeshMeshDirectComponent::handleGetEntityStateFrame(const uint8_t *buf, ui
       case SensorEntity: {
 #ifdef USE_SENSOR
         sensor::Sensor *sensor = findSensor(hash);
-        value = (int16_t) (sensor->state * 10.0);
-        value_type = 1;
+        if(sensor) {
+          value = (int16_t) (sensor->state * 10.0);
+          value_type = 1;
+        }
 #endif
       } break;
       case BinarySensorEntity: {
 #ifdef USE_BINARY_SENSOR
         binary_sensor::BinarySensor *binary = findBinarySensor(hash);
-        value = binary->state ? 10 : 0;
-        value_type = 1;
+        if(binary) {
+          value = binary->state ? 10 : 0;
+          value_type = 1;
+        }
 #endif
       } break;
       case SwitchEntity: {
 #ifdef USE_SWITCH
         auto switch_ = findSwitch(hash);
-        value = switch_->state ? 1 : 0;
-        value_type = 1;
+        if(switch_) {
+          value = switch_->state ? 1 : 0;
+          value_type = 1;
+        }
 #endif
       } break;
       case LightEntity: {
 #ifdef USE_LIGHT
         light::LightState *state = findLightState(hash);
-        if (state->current_values.get_state() == 0)
-          value = 0;
-        else
-          value = (uint16_t) (state->current_values.get_brightness() * 1024.0);
-        value_type = 1;
+        if(state) {
+          if (state->current_values.get_state() == 0)
+            value = 0;
+          else
+            value = (uint16_t) (state->current_values.get_brightness() * 1024.0);
+          value_type = 1;
+        }
 #endif
       } break;
       case TextSensorEntity: {
 #ifdef USE_TEXT_SENSOR
         text_sensor::TextSensor *texts = findTextSensor(hash);
-        value_str = texts->state;
-        value_type = 2;
+        if(texts) {
+          value_str = texts->state;
+          value_type = 2;
+        }
 #endif
       } break;
       case AllEntities:
@@ -298,21 +323,28 @@ int8_t MeshMeshDirectComponent::handleGetEntityStateFrame(const uint8_t *buf, ui
     }
 
     if (value_type == 1) {
-      uint8_t rep[4];
+      uint8_t rep[7];
       rep[0] = CMD_ENTITY_REQ;
       rep[1] = GET_ENTITY_STATE_REP;
-      espmeshmesh::uint16toBuffer(rep + 2, value);
-      mMeshmesh->commandReply(rep, 4);
+      rep[2] = value_type;
+      espmeshmesh::uint16toBuffer(rep + 3, hash);
+      espmeshmesh::uint16toBuffer(rep + 5, value);
+      if(mMeshmesh) mMeshmesh->commandReply(rep, 7);
+      else ESP_LOGE(TAG, "handleGetEntityStateFrame: Meshmesh parent not been initialized");
       return 0;
     } else if (value_type == 2) {
-      uint16_t rep_size = 3 + value_str.length();
+      uint16_t rep_size = 5 + value_str.length();
       auto *rep = new uint8_t[rep_size];
       rep[0] = CMD_ENTITY_REQ;
       rep[1] = GET_ENTITY_STATE_REP;
       rep[2] = value_type;
-      os_memcpy(rep + 3, value_str.data(), value_str.length());
-      mMeshmesh->commandReply(rep, rep_size);
+      espmeshmesh::uint16toBuffer(rep + 3, hash);
+      os_memcpy(rep + 5, value_str.data(), value_str.length());
+      if(mMeshmesh) mMeshmesh->commandReply(rep, rep_size);
+      else ESP_LOGE(TAG, "handleGetEntityStateFrame: Meshmesh parent not been initialized");
       return 0;
+    } else {
+      ESP_LOGE(TAG, "handleGetEntityStateFrame: Unknown entity with hash %04X", hash);
     }
   }
   return 1;
@@ -331,39 +363,49 @@ int8_t MeshMeshDirectComponent::handleSetEntityStateFrame(const uint8_t *buf, ui
       case SensorEntity: {
 #ifdef USE_SENSOR
         sensor::Sensor *sensor = findSensor(hash);
-        value = (int16_t) (sensor->state * 10.0);
-        value_type = 1;
+        if(sensor) {
+          value = (int16_t) (sensor->state * 10.0);
+          value_type = 1;
+        }
 #endif
       } break;
       case BinarySensorEntity: {
 #ifdef USE_BINARY_SENSOR
         binary_sensor::BinarySensor *binary = findBinarySensor(hash);
-        value = binary->state ? 10 : 0;
-        value_type = 1;
+        if(binary) {
+          value = binary->state ? 10 : 0;
+          value_type = 1;
+        }
 #endif
       } break;
       case SwitchEntity: {
 #ifdef USE_SWITCH
         auto switch_ = findSwitch(hash);
-        value = switch_->state ? 1 : 0;
-        value_type = 1;
+        if(switch_) {
+          value = switch_->state ? 1 : 0;
+          value_type = 1;
+        }
 #endif
       } break;
       case LightEntity: {
 #ifdef USE_LIGHT
         light::LightState *state = findLightState(hash);
-        if (state->current_values.get_state() == 0)
-          value = 0;
-        else
-          value = (uint16_t) (state->current_values.get_brightness() * 1024.0);
-        value_type = 1;
+        if(state) {
+          if (state->current_values.get_state() == 0)
+            value = 0;
+          else
+            value = (uint16_t) (state->current_values.get_brightness() * 1024.0);
+          value_type = 1;
+        }
 #endif
       } break;
       case TextSensorEntity: {
 #ifdef USE_TEXT_SENSOR
         text_sensor::TextSensor *texts = findTextSensor(hash);
-        value_str = texts->state;
-        value_type = 2;
+        if(texts) {
+          value_str = texts->state;
+          value_type = 2;
+        }
 #endif
       } break;
       case AllEntities:
@@ -387,6 +429,8 @@ int8_t MeshMeshDirectComponent::handleSetEntityStateFrame(const uint8_t *buf, ui
       os_memcpy(rep + 3, value_str.data(), value_str.length());
       mMeshmesh->commandReply(rep, rep_size);
       return 0;
+    } else {
+      ESP_LOGE(TAG, "handleSetEntityStateFrame: Unknown entity with hash %04X", hash);
     }
   }
   return 1;
@@ -443,6 +487,7 @@ int8_t MeshMeshDirectComponent::handleCustomDataFrame(const uint8_t *buf, uint16
 }
 
 int8_t MeshMeshDirectComponent::handleCommandReply(const uint8_t *buf, uint16_t len, uint32_t from) {
+  ESP_LOGD(TAG, "handleCommandReply: len %d handlers %d", len, mCommandReplyHandlers.size());
   if (len >= 1) {
     uint8_t cmd = buf[0];
     for (auto handler : mCommandReplyHandlers) {

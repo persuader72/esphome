@@ -21,6 +21,7 @@ struct MeshMeshSwitchState {
 
 void MeshMeshSwitch::setup() {
   mMMDirect = MeshMeshDirectComponent::getInstance();
+  mMMDirect->registerCommandReplyHandler(this);
   mRequestUpdate = true;
   mRequestTime = millis();
 }
@@ -57,10 +58,13 @@ void MeshMeshSwitch::queryRemoteState() {
 
 bool MeshMeshSwitch::onCommandReply(uint32_t from, uint8_t cmd, const uint8_t *data, uint16_t len) {
   if(cmd == GET_ENTITY_STATE_REP) {
-    if(len == 4) {
-      uint16_t hash = espmeshmesh::uint16FromBuffer(data);
-      if(hash == mHash) {
-        this->publish_state(data[2] > 0 ? true : false);
+    if(len >= 5) {
+      uint8_t value_type = data[0];
+      uint16_t hash = espmeshmesh::uint16FromBuffer(data+1);
+      if(value_type == 1 && hash == mHash) {
+        int16_t value = espmeshmesh::uint16FromBuffer(data+3);
+        this->publish_state(value > 0 ? true : false);
+        mLastQueryTime = 0;
         return true;
       }
     }
