@@ -18,6 +18,8 @@ This file is a patched version of the ota_esphome.cpp file from the ESPHome proj
 #include "esphome/core/log.h"
 #include "esphome/core/util.h"
 
+#include <espmeshmesh.h>
+
 #include <cerrno>
 #include <cstdio>
 
