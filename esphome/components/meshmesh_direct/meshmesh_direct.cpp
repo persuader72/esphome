@@ -389,6 +389,7 @@ int8_t MeshMeshDirectComponent::handleSetEntityStateFrame(const uint8_t *buf, ui
       case SensorEntity:
       case BinarySensorEntity:
       case AllEntities:
+      case TextSensorEntity:
       case LastEntity:
         break;
     }
