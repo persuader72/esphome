@@ -29,7 +29,7 @@ HARDWARE_UART_TO_UART_SELECTION = {
     DEFAULT: meshmesh_ns.UART_SELECTION_DEFAULT,
 }
 
-CONF_TEST_MODE = "test_mode"
+CONF_BONDING_MODE = "bonding_mode"
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -40,7 +40,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional(CONF_TX_BUFFER_SIZE, default=4096): cv.validate_bytes,
         cv.Required(CONF_CHANNEL): cv.positive_int,
         cv.Required(CONF_PASSWORD): cv.string,
-        cv.Optional(CONF_TEST_MODE): cv.boolean,
+        cv.Optional(CONF_BONDING_MODE, default=False): cv.boolean,
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -51,9 +51,8 @@ async def to_code(config):
     cg.add_define("USE_POLITE_BROADCAST_PROTOCOL")
     cg.add_define("USE_MULTIPATH_PROTOCOL")
     cg.add_define("USE_CONNECTED_PROTOCOL")
-
-    if CONF_TEST_MODE in config:
-        cg.add_define("USE_TEST_PROCEDURE")
+    if CONF_BONDING_MODE in config and config[CONF_BONDING_MODE]:
+        cg.add_define("USE_BONDING_MODE")
 
     if CORE.is_esp8266:
         cg.add_build_flag("-Wl,-wrap=ppEnqueueRxq")
