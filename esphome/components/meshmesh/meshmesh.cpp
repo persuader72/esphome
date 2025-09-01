@@ -35,6 +35,10 @@ MeshmeshComponent::MeshmeshComponent(int baud_rate, int tx_buffer, int rx_buffer
   mesh->setLogCb(logPrintfCb);
 }
 
+void MeshmeshComponent::setAesPassword(const char *password) {
+  this->mesh->setAesPassword(password);
+}
+
 void MeshmeshComponent::defaultPreferences() {
   // Default preferences
   os_memset(mPreferences.devicetag, 0, 32);

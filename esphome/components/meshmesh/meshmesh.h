@@ -40,15 +40,16 @@ public:
   explicit MeshmeshComponent(int baud_rate, int tx_buffer, int rx_buffer);
   espmeshmesh::EspMeshMesh *getNetwork() { return mesh; }
   void setChannel(int channel) { mConfigChannel = channel; }
-  void setAesPassword(const char *password) { mAesPassword = password; }
+  void setAesPassword(const char *password);
   void set_uart_selection(UARTSelection uart_selection) { /*FIXME: uart_ = uart_selection;*/}
 private:
   void defaultPreferences();
   void preSetupPreferences();
-  uint8_t mConfigChannel;
-  const char *mAesPassword;
+private:
   ESPPreferenceObject mPreferencesObject;
   MeshmeshSettings mPreferences;
+private:
+uint8_t mConfigChannel;
 public:
   void pre_setup();
   void setup() override;
