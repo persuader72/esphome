@@ -25,7 +25,7 @@ class MeshmeshRawImpl : public Socket {
  public:
   MeshmeshRawImpl(uint32_t from, uint16_t handle, bool server) : mFrom(from), mHandle(handle), mServer(server) {
     ESP_LOGD(TAG, "MeshmeshRawImpl::MeshmeshRawImpl from %ld handle %d", from, handle);
-    mConnectedPath = meshmesh::MeshmeshComponent::getInstance()->getNetwork()->getConnectedPath();
+    mConnectedPath = meshmesh::global_meshmesh_component->getNetwork()->getConnectedPath();
     if (!mServer) {
       mConnectedPath->setReceiveCallback(
           [](void *arg, const uint8_t *data, uint16_t size, uint8_t connid) {

@@ -30,13 +30,15 @@ struct MeshmeshSettings {
   uint32_t log_destination;
   uint8_t channel;
   uint8_t txPower;
+  uint8_t flags;
   uint32_t groups;
+#ifdef USE_BONDING_MODE
+  uint32_t bonded_node;
+#endif
 } __attribute__((packed));
 
 class MeshmeshComponent : public Component {
 public:
-  static MeshmeshComponent *singleton;
-  static MeshmeshComponent *getInstance();
   explicit MeshmeshComponent(int baud_rate, int tx_buffer, int rx_buffer);
   espmeshmesh::EspMeshMesh *getNetwork() { return mesh; }
   void setChannel(int channel) { mConfigChannel = channel; }
@@ -63,6 +65,8 @@ private:
   bool mRebootRequested{false};
   uint32_t mRebootRequestedTime{0};
 };
+
+extern MeshmeshComponent *global_meshmesh_component;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 void logPrintfCb(int level, const char *tag, int line, const char *format, va_list args);
 

@@ -362,11 +362,11 @@ void MeshmeshOTAComponent::handle_data_() {
     To avoid this, we set the lockdown mode during the write/erase operations to be sure that no packet is handled.
 */
 #ifdef USE_ESP8266
-    MeshmeshComponent::getInstance()->getNetwork()->setLockdownMode(true);
+    global_meshmesh_component->getNetwork()->setLockdownMode(true);
 #endif
     error_code = backend->write(buf, read);
 #ifdef USE_ESP8266
-    MeshmeshComponent::getInstance()->getNetwork()->setLockdownMode(false);
+    global_meshmesh_component->getNetwork()->setLockdownMode(false);
 #endif
     if (error_code != ota::OTA_RESPONSE_OK) {
       ESP_LOGW(TAG, "Flash write error, code: %d", error_code);
@@ -512,7 +512,7 @@ void MeshmeshOTAComponent::cleanup_connection_() {
 }
 
 void MeshmeshOTAComponent::yield_and_feed_watchdog_() {
-  meshmesh::MeshmeshComponent::getInstance()->loop();
+  meshmesh::global_meshmesh_component->loop();
   App.feed_wdt();
   delay(1);
 }

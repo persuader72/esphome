@@ -25,12 +25,12 @@ void IRAM_ATTR HOT __wrap_ppEnqueueRxq(void *a) {
 namespace esphome {
 namespace meshmesh {
 
-MeshmeshComponent *MeshmeshComponent::singleton = nullptr;
+  MeshmeshComponent *global_meshmesh_component =  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+  nullptr;                                        // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
-MeshmeshComponent *MeshmeshComponent::getInstance() { return singleton; }
 
 MeshmeshComponent::MeshmeshComponent(int baud_rate, int tx_buffer, int rx_buffer) {
-  if (singleton == nullptr) singleton = this;
+  global_meshmesh_component = this;
   mesh = new espmeshmesh::EspMeshMesh(baud_rate, tx_buffer, rx_buffer);
   mesh->setLogCb(logPrintfCb);
 }
@@ -44,8 +44,16 @@ void MeshmeshComponent::defaultPreferences() {
   os_memset(mPreferences.devicetag, 0, 32);
   mPreferences.channel = UINT8_MAX;
   mPreferences.txPower = UINT8_MAX;
+  mPreferences.flags = 0;
   mPreferences.log_destination = 0;
   mPreferences.groups = 0;
+#ifdef USE_BONDING_MODE
+  // The bonding will permit this node to receive frames only from the bonded node.
+  // * 0x0: bonding is disabled,
+  // * UINT32_MAX: node not bondend,
+  // * otherwise: the node id of the bonded node
+  mPreferences.bonded_node = UINT32_MAX;
+#endif
 }
 
 void MeshmeshComponent::preSetupPreferences() {

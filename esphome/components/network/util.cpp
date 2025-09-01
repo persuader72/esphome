@@ -39,7 +39,7 @@ bool is_connected() {
 #endif
 
 #ifdef USE_MESH_MESH
-  if (meshmesh::MeshmeshComponent::getInstance() != nullptr)
+  if (meshmesh::global_meshmesh_component != nullptr)
     return true;
 #endif
 

@@ -31,7 +31,7 @@ MeshMeshDirectComponent::MeshMeshDirectComponent() : Component() {
 }
 
 void MeshMeshDirectComponent::setup() {
-  mMeshmesh = MeshmeshComponent::getInstance()->getNetwork();
+  mMeshmesh = global_meshmesh_component->getNetwork();
   mMeshmesh->addHandleFrameCb(std::bind(&MeshMeshDirectComponent::handleFrame, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 }
 

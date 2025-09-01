@@ -361,13 +361,13 @@ void ESPHomeOTAComponent::handle_data_() {
 */
 #ifdef USE_MESH_MESH
 #ifdef USE_ESP8266
-    meshmesh::MeshmeshComponent::getInstance()->getNetwork()->setLockdownMode(true);
+    meshmesh::global_meshmesh_component->getNetwork()->setLockdownMode(true);
 #endif
 #endif
     error_code = backend->write(buf, read);
 #ifdef USE_MESH_MESH
 #ifdef USE_ESP8266
-    meshmesh::MeshmeshComponent::getInstance()->getNetwork()->setLockdownMode(false);
+    meshmesh::global_meshmesh_component->getNetwork()->setLockdownMode(false);
 #endif
 #endif
     if (error_code != ota::OTA_RESPONSE_OK) {
@@ -515,7 +515,7 @@ void ESPHomeOTAComponent::cleanup_connection_() {
 
 void ESPHomeOTAComponent::yield_and_feed_watchdog_() {
 #ifdef USE_MESH_MESH
-  meshmesh::MeshmeshComponent::getInstance()->loop();
+  meshmesh::global_meshmesh_component->loop();
 #endif
   App.feed_wdt();
   delay(1);
