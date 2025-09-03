@@ -11,7 +11,7 @@ from esphome.const import (
 )
 from esphome.core import CORE, coroutine_with_priority
 
-CODEOWNERS = ["@meshmesh"]
+CODEOWNERS = ["@persuader72"]
 AUTO_LOAD = ["network", "md5"]
 
 UART0 = "UART0"

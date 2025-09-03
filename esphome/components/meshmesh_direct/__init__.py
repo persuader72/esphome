@@ -5,7 +5,7 @@ import esphome.config_validation as cv
 from esphome.const import CONF_ADDRESS, CONF_DATA, CONF_ID, CONF_TRIGGER_ID
 from esphome.types import ConfigType
 
-CODEOWNERS = ["@meshmesh"]
+CODEOWNERS = ["@persuader72"]
 DEPENDENCIES = ["meshmesh"]
 
 byte_vector = cg.std_vector.template(cg.uint8)
