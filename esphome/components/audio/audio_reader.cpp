@@ -53,7 +53,11 @@ enum HttpStatus {
   HTTP_STATUS_INTERNAL_ERROR = 500
 };
 
-AudioReader::~AudioReader() { this->cleanup_connection_(); }
+AudioReader::~AudioReader() {
+#ifndef USE_SOCKET_IMPL_MESHMESH_8266
+  this->cleanup_connection_();
+#endif
+}
 
 esp_err_t AudioReader::add_sink(const std::weak_ptr<RingBuffer> &output_ring_buffer) {
   if (current_audio_file_ != nullptr) {
@@ -83,7 +87,7 @@ esp_err_t AudioReader::start(AudioFile *audio_file, AudioFileType &file_type) {
 
 esp_err_t AudioReader::start(const std::string &uri, AudioFileType &file_type) {
   file_type = AudioFileType::NONE;
-
+#ifndef USE_SOCKET_IMPL_MESHMESH_8266
   this->cleanup_connection_();
 
   if (uri.empty()) {
@@ -215,14 +219,18 @@ esp_err_t AudioReader::start(const std::string &uri, AudioFileType &file_type) {
   if (this->output_transfer_buffer_ == nullptr) {
     return ESP_ERR_NO_MEM;
   }
-
+#endif
   return ESP_OK;
 }
 
 AudioReaderState AudioReader::read() {
+#ifndef USE_SOCKET_IMPL_MESHMESH_8266
   if (this->client_ != nullptr) {
     return this->http_read_();
-  } else if (this->current_audio_file_ != nullptr) {
+  } else
+#endif
+
+if (this->current_audio_file_ != nullptr) {
     return this->file_read_();
   }
 
@@ -247,6 +255,7 @@ AudioFileType AudioReader::get_audio_type(const char *content_type) {
   return AudioFileType::NONE;
 }
 
+#ifndef USE_SOCKET_IMPL_MESHMESH_8266
 esp_err_t AudioReader::http_event_handler(esp_http_client_event_t *evt) {
   // Based on https://github.com/maroc81/WeatherLily/tree/main/main/net accessed 20241224
   AudioReader *this_reader = (AudioReader *) evt->user_data;
@@ -262,6 +271,7 @@ esp_err_t AudioReader::http_event_handler(esp_http_client_event_t *evt) {
   }
   return ESP_OK;
 }
+#endif
 
 AudioReaderState AudioReader::file_read_() {
   size_t remaining_bytes = this->current_audio_file_->length - (this->file_current_ - this->current_audio_file_->data);
@@ -276,6 +286,7 @@ AudioReaderState AudioReader::file_read_() {
   return AudioReaderState::FINISHED;
 }
 
+#ifndef USE_SOCKET_IMPL_MESHMESH_8266
 AudioReaderState AudioReader::http_read_() {
   this->output_transfer_buffer_->transfer_data_to_sink(pdMS_TO_TICKS(READ_WRITE_TIMEOUT_MS), false);
 
@@ -313,7 +324,8 @@ AudioReaderState AudioReader::http_read_() {
 
   return AudioReaderState::READING;
 }
-
+#endif
+#ifndef USE_SOCKET_IMPL_MESHMESH_8266
 void AudioReader::cleanup_connection_() {
   if (this->client_ != nullptr) {
     esp_http_client_close(this->client_);
@@ -321,7 +333,7 @@ void AudioReader::cleanup_connection_() {
     this->client_ = nullptr;
   }
 }
-
+#endif
 }  // namespace audio
 }  // namespace esphome
 

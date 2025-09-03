@@ -8,8 +8,9 @@
 #include "esphome/core/ring_buffer.h"
 
 #include "esp_err.h"
-
+#ifndef USE_SOCKET_IMPL_MESHMESH_8266
 #include <esp_http_client.h>
+#endif
 
 namespace esphome {
 namespace audio {
@@ -56,7 +57,9 @@ class AudioReader {
 
  protected:
   /// @brief Monitors the http client events to attempt determining the file type from the Content-Type header
+#ifndef USE_SOCKET_IMPL_MESHMESH_8266
   static esp_err_t http_event_handler(esp_http_client_event_t *evt);
+#endif
 
   /// @brief Determines the audio file type from the http header's Content-Type key
   /// @param content_type string with the Content-Type key
@@ -68,12 +71,16 @@ class AudioReader {
 
   std::shared_ptr<RingBuffer> file_ring_buffer_;
   std::unique_ptr<AudioSinkTransferBuffer> output_transfer_buffer_;
+#ifndef USE_SOCKET_IMPL_MESHMESH_8266
   void cleanup_connection_();
+#endif
 
   size_t buffer_size_;
   uint32_t last_data_read_ms_;
 
+#ifndef USE_SOCKET_IMPL_MESHMESH_8266
   esp_http_client_handle_t client_{nullptr};
+#endif
 
   AudioFile *current_audio_file_{nullptr};
   AudioFileType audio_file_type_{AudioFileType::NONE};
