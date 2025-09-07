@@ -25,7 +25,7 @@ void MeshmeshTransport::update() {
 void MeshmeshTransport::send_packet(const std::vector<uint8_t> &buf) const {
   uint8_t *buff = new uint8_t[buf.size()+1];
   buff[0] = CMD_PACKET_TRANSPORT_REQ;
-  os_memcpy(buff+2, buf.data(), buf.size());
+  memcpy(buff+2, buf.data(), buf.size());
   if(this->address_ != 0)
     this->parent_->getNetwork()->uniCastSendData(buf.data(), buf.size(), this->address_);
   else

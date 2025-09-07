@@ -39,7 +39,7 @@ void MeshMeshDirectComponent::broadcastSend(const uint8_t cmd, const uint8_t *da
   uint8_t *buff = new uint8_t[len+2];
   buff[0] = CMD_ENTITY_REQ;
   buff[1] = cmd;
-  os_memcpy(buff+2, data, len);
+  memcpy(buff+2, data, len);
   if(mMeshmesh) mMeshmesh->broadCastSendData(buff, len+2);
   else ESP_LOGE(TAG, "broadcastSend: Meshmesh parent not been initialized");
   delete buff;
@@ -72,7 +72,7 @@ void MeshMeshDirectComponent::unicastSend(const uint8_t cmd, const uint8_t *data
   uint8_t *buff = new uint8_t[len+2];
   buff[0] = CMD_ENTITY_REQ;
   buff[1] = cmd;
-  os_memcpy(buff+2, data, len);
+  memcpy(buff+2, data, len);
   if(mMeshmesh) mMeshmesh->uniCastSendData(buff, len+2, addr);
   else ESP_LOGE(TAG, "unicastSend: Meshmesh parent not been initialized");
   delete buff;
@@ -140,7 +140,7 @@ int8_t MeshMeshDirectComponent::handleEntitiesCountFrame(const uint8_t *buf, uin
     rep[0] = CMD_ENTITY_REQ;
     rep[1] = ENTITIES_COUNT_REP;
     uint8_t *buf = rep + 2;
-    os_memset(buf, 0, LastEntity);
+    memset(buf, 0, LastEntity);
 
 #ifdef USE_SENSOR
     buf[SensorEntity] = (uint8_t) App.get_sensors().size();
@@ -240,7 +240,7 @@ int8_t MeshMeshDirectComponent::handleGetEntityHashFrame(const uint8_t *buf, uin
       rep[0] = CMD_ENTITY_REQ;
       rep[1] = GET_ENTITY_HASH_REP;
       espmeshmesh::uint16toBuffer(rep + 2, hash);
-      os_memcpy(rep + 4, info.c_str(), info.length());
+      memcpy(rep + 4, info.c_str(), info.length());
       mMeshmesh->commandReply(rep, 4 + info.length());
       return 0;
       delete rep;
@@ -339,7 +339,7 @@ int8_t MeshMeshDirectComponent::handleGetEntityStateFrame(const uint8_t *buf, ui
       rep[1] = GET_ENTITY_STATE_REP;
       rep[2] = value_type;
       espmeshmesh::uint16toBuffer(rep + 3, hash);
-      os_memcpy(rep + 5, value_str.data(), value_str.length());
+      memcpy(rep + 5, value_str.data(), value_str.length());
       if(mMeshmesh) mMeshmesh->commandReply(rep, rep_size);
       else ESP_LOGE(TAG, "handleGetEntityStateFrame: Meshmesh parent not been initialized");
       return 0;

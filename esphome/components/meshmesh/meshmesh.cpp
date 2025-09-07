@@ -41,7 +41,7 @@ void MeshmeshComponent::setAesPassword(const char *password) {
 
 void MeshmeshComponent::defaultPreferences() {
   // Default preferences
-  os_memset(mPreferences.devicetag, 0, 32);
+  memset(mPreferences.devicetag, 0, 32);
   mPreferences.channel = UINT8_MAX;
   mPreferences.txPower = UINT8_MAX;
   mPreferences.flags = 0;
@@ -107,14 +107,14 @@ int8_t MeshmeshComponent::handleFrame(uint8_t *buf, uint16_t len, uint32_t from)
       if (len == 1) {
         uint8_t rep[33] = {0};
         rep[0] = CMD_NODE_TAG_REP;
-        os_memcpy(rep + 1, mPreferences.devicetag, 32);
+        memcpy(rep + 1, mPreferences.devicetag, 32);
         mesh->commandReply(rep, 33);
         return HANDLE_UART_OK;
       }
       break;
     case CMD_NODE_TAG_SET_REQ:
       if (len > 1) {
-        os_memcpy(mPreferences.devicetag, buf + 1, len - 1);
+        memcpy(mPreferences.devicetag, buf + 1, len - 1);
         mPreferences.devicetag[len - 1] = 0;
         mPreferencesObject.save(&mPreferences);
         buf[0] = CMD_NODE_TAG_SET_REP;
